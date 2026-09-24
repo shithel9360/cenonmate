@@ -1,18 +1,86 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { Play, Maximize2, MoveRight, Send, CheckCircle2, Lock } from 'lucide-react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { Play, Maximize2, MoveRight, Send, CheckCircle2, Lock, X, Film, Smartphone, Flame, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-interface VideoProject {
+interface MediaProject {
   id: string;
   title: string;
   video_url: string;
   thumbnail_url?: string;
   description?: string;
+  media_type: 'video' | 'short' | 'reel';
   is_featured?: boolean;
+}
+
+// Initial Curated Media for Cenonmate
+const defaultMediaItems: MediaProject[] = [
+  {
+    id: 'default-yt-1',
+    title: '$7000 Portfolio Website With Free AI Tools',
+    video_url: 'https://www.youtube.com/watch?v=tf_yi6DtDOQ',
+    thumbnail_url: 'https://i.ytimg.com/vi/tf_yi6DtDOQ/hqdefault.jpg',
+    description: 'High-end AI portfolio creation and cinematic visual engineering breakdown.',
+    media_type: 'video',
+    is_featured: true,
+  },
+  {
+    id: 'default-yt-2',
+    title: 'Cenonmate 2026 AI Video Showreel',
+    video_url: 'https://www.youtube.com/@Cenonmate-z6j',
+    thumbnail_url: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?q=80&w=1600&auto=format&fit=crop',
+    description: 'Commercial grade AI video editing, pacing, and sound design for global brands.',
+    media_type: 'video',
+    is_featured: false,
+  },
+  {
+    id: 'default-short-1',
+    title: 'Speed Edit: AI Visual Hook in 5 Seconds',
+    video_url: 'https://www.youtube.com/@Cenonmate-z6j',
+    thumbnail_url: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=1000&auto=format&fit=crop',
+    description: 'How to retain 85% audience attention with pacing.',
+    media_type: 'short',
+  },
+  {
+    id: 'default-short-2',
+    title: '3D Hyper-Realistic Product Simulation',
+    video_url: 'https://www.youtube.com/@Cenonmate-z6j',
+    thumbnail_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop',
+    description: 'From 2D concept to rotating 3D cinematic rendering.',
+    media_type: 'short',
+  },
+  {
+    id: 'default-reel-1',
+    title: 'Cenonmate Instagram Reel: Neon Cyber Aesthetics',
+    video_url: 'https://www.instagram.com/cenon_mate/',
+    thumbnail_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop',
+    description: 'Exclusive behind-the-scenes editing workflow.',
+    media_type: 'reel',
+  },
+  {
+    id: 'default-reel-2',
+    title: 'AI Color Grading Before vs After',
+    video_url: 'https://www.instagram.com/cenon_mate/',
+    thumbnail_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop',
+    description: 'Cinematic color profile matching using AI tools.',
+    media_type: 'reel',
+  },
+];
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  let videoId = '';
+  if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+  } else if (url.includes('watch?v=')) {
+    videoId = url.split('watch?v=')[1]?.split('&')[0] || '';
+  } else if (url.includes('shorts/')) {
+    videoId = url.split('shorts/')[1]?.split('?')[0] || '';
+  }
+  return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : null;
 }
 
 // --- CUSTOM CURSOR ---
@@ -72,10 +140,11 @@ export default function Home() {
   const scaleVideo = useTransform(scrollYProgress, [0.05, 0.2], [0.8, 1]);
   const opacityHero = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
-  // Supabase State
-  const [featuredVideo, setFeaturedVideo] = useState<VideoProject | null>(null);
-  const [videoList, setVideoList] = useState<VideoProject[]>([]);
-  
+  // Media State
+  const [mediaItems, setMediaItems] = useState<MediaProject[]>(defaultMediaItems);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'video' | 'short' | 'reel'>('all');
+  const [activeModalVideo, setActiveModalVideo] = useState<MediaProject | null>(null);
+
   // Contact Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -93,12 +162,11 @@ export default function Home() {
           .order('created_at', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          const featured = data.find((v: VideoProject) => v.is_featured) || data[0];
-          setFeaturedVideo(featured);
-          setVideoList(data);
+          // Merge Supabase items with defaults
+          setMediaItems(data);
         }
       } catch (e) {
-        console.error('Error loading Supabase data:', e);
+        console.error('Error loading Supabase media:', e);
       }
     }
     loadProjects();
@@ -122,6 +190,13 @@ export default function Home() {
       setSubmitting(false);
     }
   };
+
+  const filteredMedia = mediaItems.filter((item) => {
+    if (activeFilter === 'all') return true;
+    return item.media_type === activeFilter;
+  });
+
+  const featuredVideo = mediaItems.find((v) => v.is_featured) || mediaItems[0];
 
   return (
     <div ref={containerRef} className="spotlight-wrapper min-h-[300vh] bg-black text-white selection:bg-white selection:text-black cursor-none">
@@ -150,8 +225,8 @@ export default function Home() {
         <div className="text-xl font-medium tracking-tight">
           CENONMATE
         </div>
-        <div className="hidden md:flex gap-16 text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white/50">
-          <a href="#work" className="hover:text-white transition-colors">Work</a>
+        <div className="hidden md:flex gap-12 text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white/50">
+          <a href="#showcase" className="hover:text-white transition-colors">Videos & Reels</a>
           <a href="#expertise" className="hover:text-white transition-colors">Expertise</a>
           <a href="#contact" className="hover:text-white transition-colors">Contact</a>
         </div>
@@ -187,52 +262,269 @@ export default function Home() {
             style={{ y: yHero1 }}
             className="mt-16 text-lg md:text-xl text-white/40 max-w-xl mx-auto font-light text-center z-10"
           >
-            Architecting high-end digital experiences. <br/>Video Editing • 3D Design • Visual Strategy
+            Architecting high-end digital experiences. <br/>Video Editing • 3D Design • YouTube & Reels
           </motion.p>
 
         </motion.div>
       </section>
 
-      {/* Expanding Showreel (Scroll linked & Supabase dynamic) */}
+      {/* Expanding Main Featured Showreel */}
       <section id="work" className="relative z-20 w-full min-h-screen flex items-center justify-center bg-black">
         <motion.div 
           style={{ scale: scaleVideo }}
           className="relative w-[95vw] h-[80vh] md:h-[90vh] bg-[#0a0a0a] rounded-[2rem] overflow-hidden group border border-white/5"
         >
-          {/* Abstract Cinematic Poster or Supabase Thumbnail */}
           <div 
-            style={{ backgroundImage: `url(${featuredVideo?.thumbnail_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop'})` }}
+            style={{ backgroundImage: `url(${featuredVideo?.thumbnail_url || 'https://i.ytimg.com/vi/tf_yi6DtDOQ/hqdefault.jpg'})` }}
             className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity group-hover:scale-105 transition-transform duration-[2s] ease-out" 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
           
-          {/* Custom Play Button */}
-          <a 
-            href={featuredVideo?.video_url || 'https://www.youtube.com/@Cenonmate-z6j'}
-            target="_blank"
-            rel="noreferrer"
-            className="absolute inset-0 flex items-center justify-center"
+          <button 
+            onClick={() => setActiveModalVideo(featuredVideo)}
+            className="absolute inset-0 flex items-center justify-center cursor-pointer"
           >
-            <div className="w-24 h-24 rounded-full border-[1px] border-white/20 flex items-center justify-center backdrop-blur-xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-700 cursor-pointer">
+            <div className="w-24 h-24 rounded-full border-[1px] border-white/20 flex items-center justify-center backdrop-blur-xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-700">
               <Play className="w-8 h-8 text-white fill-white group-hover:text-black group-hover:fill-black ml-1 transition-colors" />
             </div>
-          </a>
+          </button>
 
           <div className="absolute bottom-12 left-12 right-12 flex flex-col md:flex-row justify-between md:items-end gap-6 pointer-events-none">
             <div>
               <p className="text-[0.65rem] uppercase tracking-[0.3em] text-white/50 mb-3">Featured Showreel</p>
               <h2 className="text-4xl md:text-6xl font-medium tracking-tight">
-                {featuredVideo?.title || 'Cenonmate 2026'}
+                {featuredVideo?.title}
               </h2>
             </div>
             <div className="flex gap-4">
-              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">Video</span>
-              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">AI</span>
-              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">3D</span>
+              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">YouTube</span>
+              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">AI Video</span>
+              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">Shorts</span>
             </div>
           </div>
         </motion.div>
       </section>
+
+      {/* ======================================================== */}
+      {/* --- MASSIVE MEDIA SHOWCASE: VIDEOS, SHORTS & REELS --- */}
+      {/* ======================================================== */}
+      <section id="showcase" className="relative z-20 w-full bg-black py-36 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          {/* Header & Controls */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+            <div>
+              <div className="inline-flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.3em] text-cyan-400 font-bold mb-3">
+                <Flame className="w-4 h-4 text-cyan-400" /> Cenonmate Media Vault
+              </div>
+              <h2 className="text-4xl md:text-7xl font-light tracking-tight">
+                VIDEOS, SHORTS <br /><span className="text-white/40">& INSTAGRAM REELS.</span>
+              </h2>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex flex-wrap gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
+                  activeFilter === 'all' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'
+                }`}
+              >
+                All ({mediaItems.length})
+              </button>
+              <button
+                onClick={() => setActiveFilter('video')}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
+                  activeFilter === 'video' ? 'bg-red-500 text-white shadow-lg' : 'text-white/50 hover:text-white'
+                }`}
+              >
+                <Film className="w-3.5 h-3.5" /> Videos (16:9)
+              </button>
+              <button
+                onClick={() => setActiveFilter('short')}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
+                  activeFilter === 'short' ? 'bg-red-600 text-white shadow-lg' : 'text-white/50 hover:text-white'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" /> Shorts (9:16)
+              </button>
+              <button
+                onClick={() => setActiveFilter('reel')}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
+                  activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg' : 'text-white/50 hover:text-white'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" /> Reels (9:16)
+              </button>
+            </div>
+          </div>
+
+          {/* Dynamic Grid: Landscape Videos & Vertical Phone Frames */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredMedia.map((item, index) => {
+              const isVertical = item.media_type === 'short' || item.media_type === 'reel';
+
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  className={`group relative rounded-3xl overflow-hidden glass-card border border-white/10 flex flex-col justify-between ${
+                    isVertical ? 'aspect-[9/16] md:max-w-[340px] mx-auto w-full' : 'aspect-video col-span-1 md:col-span-2 lg:col-span-2'
+                  }`}
+                >
+                  {/* Poster / Thumbnail Image */}
+                  <div
+                    style={{ backgroundImage: `url(${item.thumbnail_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000'})` }}
+                    className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+
+                  {/* Badge on Top */}
+                  <div className="relative z-10 p-6 flex justify-between items-center">
+                    <span
+                      className={`text-[0.65rem] uppercase tracking-widest font-black px-3 py-1 rounded-full border ${
+                        item.media_type === 'video'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                          : item.media_type === 'short'
+                          ? 'bg-red-600/30 text-red-300 border-red-500/40'
+                          : 'bg-pink-600/30 text-pink-300 border-pink-500/40'
+                      }`}
+                    >
+                      {item.media_type === 'video' ? 'YouTube 16:9' : item.media_type === 'short' ? 'YouTube Short' : 'Instagram Reel'}
+                    </span>
+
+                    <a
+                      href={item.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-9 h-9 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:scale-110 transition-all"
+                      title="Open in platform"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+
+                  {/* Center Play Button Overlay */}
+                  <div className="relative z-10 flex items-center justify-center my-auto">
+                    <button
+                      onClick={() => {
+                        if (getYouTubeEmbedUrl(item.video_url)) {
+                          setActiveModalVideo(item);
+                        } else {
+                          window.open(item.video_url, '_blank');
+                        }
+                      }}
+                      className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-125 group-hover:bg-white group-hover:text-black transition-all duration-500 shadow-2xl"
+                    >
+                      <Play className="w-6 h-6 fill-current ml-1" />
+                    </button>
+                  </div>
+
+                  {/* Content & Details at Bottom */}
+                  <div className="relative z-10 p-6 space-y-2">
+                    <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                      {item.title}
+                    </h3>
+                    {item.description && (
+                      <p className="text-xs text-white/60 font-light line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Social Channel Links Banner */}
+          <div className="mt-20 p-8 md:p-12 rounded-3xl bg-white/[0.02] border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div>
+              <h4 className="text-2xl font-bold mb-1">Want to see more live daily edits?</h4>
+              <p className="text-sm text-white/40">Subscribe to our official YouTube channel and follow us on Instagram.</p>
+            </div>
+            <div className="flex gap-4">
+              <a
+                href="https://www.youtube.com/@Cenonmate-z6j"
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-3 rounded-full bg-red-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-red-500 transition-all flex items-center gap-2"
+              >
+                <Film className="w-4 h-4" /> YouTube @Cenonmate
+              </a>
+              <a
+                href="https://www.instagram.com/cenon_mate/"
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all flex items-center gap-2"
+              >
+                <Smartphone className="w-4 h-4" /> Instagram @cenon_mate
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* --- VIDEO PLAYER MODAL --- */}
+      {/* ======================================================== */}
+      <AnimatePresence>
+        {activeModalVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 md:p-12"
+            onClick={() => setActiveModalVideo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`relative bg-black rounded-3xl overflow-hidden border border-white/20 shadow-2xl ${
+                activeModalVideo.media_type === 'short' || activeModalVideo.media_type === 'reel'
+                  ? 'w-full max-w-[420px] aspect-[9/16]'
+                  : 'w-full max-w-5xl aspect-video'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setActiveModalVideo(null)}
+                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {getYouTubeEmbedUrl(activeModalVideo.video_url) ? (
+                <iframe
+                  src={getYouTubeEmbedUrl(activeModalVideo.video_url)!}
+                  title={activeModalVideo.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                  <Film className="w-16 h-16 text-cyan-400 mb-4 animate-bounce" />
+                  <h3 className="text-2xl font-bold mb-2">{activeModalVideo.title}</h3>
+                  <p className="text-sm text-white/50 mb-6">{activeModalVideo.description}</p>
+                  <a
+                    href={activeModalVideo.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-8 py-3.5 bg-white text-black font-bold rounded-full text-xs uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
+                  >
+                    Watch Directly on Platform <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Sticky Scroll Expertise Section */}
       <section id="expertise" className="relative z-20 w-full bg-black py-48">

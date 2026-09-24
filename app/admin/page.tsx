@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Play, Trash2, Plus, ArrowLeft, Mail, Video, CheckCircle, AlertCircle, Lock } from 'lucide-react';
+import { Play, Trash2, Plus, ArrowLeft, Mail, Video, CheckCircle, AlertCircle, Lock, Film, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 
 interface VideoItem {
@@ -11,6 +11,7 @@ interface VideoItem {
   video_url: string;
   thumbnail_url?: string;
   description?: string;
+  media_type?: 'video' | 'short' | 'reel';
   is_featured?: boolean;
   created_at: string;
 }
@@ -39,10 +40,11 @@ export default function AdminPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [description, setDescription] = useState('');
+  const [mediaType, setMediaType] = useState<'video' | 'short' | 'reel'>('video');
   const [isFeatured, setIsFeatured] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Simple PIN verification (Default: cenonmate2026 or from env)
+  // Simple PIN verification (Default: cenonmate2026 or admin123)
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === 'cenonmate2026' || pin === 'admin123') {
@@ -101,21 +103,23 @@ export default function AdminPage() {
           video_url: videoUrl,
           thumbnail_url: thumbnailUrl || null,
           description: description || null,
+          media_type: mediaType,
           is_featured: isFeatured,
         },
       ]);
 
       if (error) throw error;
 
-      setStatusMsg({ type: 'success', text: 'Video project successfully added to website!' });
+      setStatusMsg({ type: 'success', text: 'Media item successfully published to website!' });
       setTitle('');
       setVideoUrl('');
       setThumbnailUrl('');
       setDescription('');
+      setMediaType('video');
       setIsFeatured(false);
       fetchData();
     } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message || 'Failed to add video.' });
+      setStatusMsg({ type: 'error', text: err.message || 'Failed to add media.' });
     } finally {
       setSubmitting(false);
     }
@@ -123,13 +127,13 @@ export default function AdminPage() {
 
   const handleDeleteVideo = async (id: string) => {
     if (!supabase) return;
-    if (!confirm('Are you sure you want to delete this video?')) return;
+    if (!confirm('Are you sure you want to delete this item?')) return;
 
     try {
       const { error } = await supabase.from('videos').delete().eq('id', id);
       if (error) throw error;
       setVideos(videos.filter((v) => v.id !== id));
-      setStatusMsg({ type: 'success', text: 'Video removed.' });
+      setStatusMsg({ type: 'success', text: 'Item removed.' });
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
     }
@@ -144,7 +148,7 @@ export default function AdminPage() {
               <Lock className="w-7 h-7 text-cyan-400" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Cenonmate Admin Panel</h1>
-            <p className="text-gray-400 text-sm mt-1">Manage videos, showreels, and client leads</p>
+            <p className="text-gray-400 text-sm mt-1">Manage videos, shorts, reels, and client leads</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -188,7 +192,7 @@ export default function AdminPage() {
               <ArrowLeft className="w-4 h-4" /> View Live Website
             </Link>
             <h1 className="text-3xl font-black tracking-tight">CENONMATE BACKEND DASHBOARD</h1>
-            <p className="text-gray-400 text-sm">Control your portfolio, video showreels, and client inquiries.</p>
+            <p className="text-gray-400 text-sm">Control your portfolio, YouTube videos, Shorts, Instagram Reels, and inquiries.</p>
           </div>
 
           <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
@@ -198,7 +202,7 @@ export default function AdminPage() {
                 activeTab === 'videos' ? 'bg-cyan-400 text-black shadow-lg shadow-cyan-400/20' : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Video className="w-4 h-4" /> Videos ({videos.length})
+              <Video className="w-4 h-4" /> Media Vault ({videos.length})
             </button>
             <button
               onClick={() => setActiveTab('inquiries')}
@@ -238,21 +242,62 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Tab 1: Videos Management */}
+        {/* Tab 1: Videos, Shorts & Reels Management */}
         {activeTab === 'videos' && (
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Add Video Form */}
+            {/* Add Media Form */}
             <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 md:p-8 h-fit">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-cyan-400" /> Add New Video
+                <Plus className="w-5 h-5 text-cyan-400" /> Add New Video / Short / Reel
               </h2>
               <form onSubmit={handleAddVideo} className="space-y-4">
+                
+                {/* Media Type Selector */}
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Video Title *</label>
+                  <label className="text-xs text-gray-400 block mb-2 font-semibold">Format Type *</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMediaType('video')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all ${
+                        mediaType === 'video'
+                          ? 'bg-red-500 text-white border-red-400 shadow-md'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Video (16:9)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMediaType('short')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all ${
+                        mediaType === 'short'
+                          ? 'bg-red-600 text-white border-red-500 shadow-md'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      YT Short (9:16)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMediaType('reel')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all ${
+                        mediaType === 'reel'
+                          ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-pink-400 shadow-md'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Insta Reel (9:16)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Title *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. AI Product Commercial 2026"
+                    placeholder="e.g. AI Video Breakdown or Product 3D"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
@@ -260,11 +305,11 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Video / YouTube URL *</label>
+                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Link (YouTube, Short or Instagram) *</label>
                   <input
                     type="url"
                     required
-                    placeholder="https://youtube.com/watch?v=..."
+                    placeholder="https://youtube.com/... or https://instagram.com/reel/..."
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
@@ -272,7 +317,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Cover / Thumbnail URL (Optional)</label>
+                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Cover / Thumbnail Image URL (Optional)</label>
                   <input
                     type="url"
                     placeholder="https://images.unsplash.com/..."
@@ -283,49 +328,51 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Short Description</label>
+                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Short Caption / Description</label>
                   <textarea
-                    rows={3}
-                    placeholder="Key highlights of this AI video edit..."
+                    rows={2}
+                    placeholder="Key highlights of this edit..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400 resize-none"
                   />
                 </div>
 
-                <div className="flex items-center gap-3 pt-2">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={isFeatured}
-                    onChange={(e) => setIsFeatured(e.target.checked)}
-                    className="w-4 h-4 accent-cyan-400 rounded"
-                  />
-                  <label htmlFor="featured" className="text-sm text-gray-300 cursor-pointer">
-                    Set as Featured Main Showreel
-                  </label>
-                </div>
+                {mediaType === 'video' && (
+                  <div className="flex items-center gap-3 pt-1">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={isFeatured}
+                      onChange={(e) => setIsFeatured(e.target.checked)}
+                      className="w-4 h-4 accent-cyan-400 rounded"
+                    />
+                    <label htmlFor="featured" className="text-xs text-gray-300 cursor-pointer">
+                      Set as Main Homepage Featured Showreel
+                    </label>
+                  </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={submitting}
                   className="w-full bg-cyan-400 text-black font-bold py-3.5 rounded-xl hover:bg-cyan-300 transition-all disabled:opacity-50"
                 >
-                  {submitting ? 'Publishing...' : 'Publish to Website'}
+                  {submitting ? 'Publishing...' : 'Publish to Showcase'}
                 </button>
               </form>
             </div>
 
             {/* Video List */}
             <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-xl font-bold mb-4">Published Videos</h2>
-              {loading && <p className="text-gray-500">Loading videos...</p>}
+              <h2 className="text-xl font-bold mb-4">Published Showcase Items</h2>
+              {loading && <p className="text-gray-500">Loading...</p>}
 
               {!loading && videos.length === 0 && (
                 <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-12 text-center text-gray-500">
                   <Video className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg font-semibold text-gray-400">No custom videos added yet.</p>
-                  <p className="text-sm mt-1">Add your first video project using the form on the left!</p>
+                  <p className="text-lg font-semibold text-gray-400">No custom items published yet.</p>
+                  <p className="text-sm mt-1">Add your YouTube videos, Shorts, and Instagram Reels using the form on the left!</p>
                 </div>
               )}
 
@@ -336,6 +383,9 @@ export default function AdminPage() {
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      <span className="text-[0.65rem] uppercase tracking-wider bg-white/10 border border-white/20 px-2 py-0.5 rounded-full font-bold">
+                        {item.media_type || 'video'}
+                      </span>
                       <h3 className="font-bold text-lg text-white">{item.title}</h3>
                       {item.is_featured && (
                         <span className="text-[0.65rem] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full font-bold">
@@ -357,7 +407,7 @@ export default function AdminPage() {
                   <button
                     onClick={() => handleDeleteVideo(item.id)}
                     className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all self-end sm:self-center"
-                    title="Delete Video"
+                    title="Delete Item"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
