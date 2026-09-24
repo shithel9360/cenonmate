@@ -83,7 +83,7 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : null;
 }
 
-// --- CUSTOM CURSOR ---
+// --- CUSTOM CURSOR (DESKTOP ONLY) ---
 function CustomCursor() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -97,7 +97,7 @@ function CustomCursor() {
     
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName.toLowerCase() === 'a' || target.tagName.toLowerCase() === 'button' || target.closest('a') || target.closest('button')) {
+      if (target && (target.tagName.toLowerCase() === 'a' || target.tagName.toLowerCase() === 'button' || target.closest('a') || target.closest('button'))) {
         setIsHovered(true);
       } else {
         setIsHovered(false);
@@ -128,17 +128,27 @@ function CustomCursor() {
 
 // --- MAIN PAGE ---
 export default function Home() {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkIsDesktop();
+    window.addEventListener('resize', checkIsDesktop);
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   });
 
-  // Parallax Values
-  const yHero1 = useTransform(scrollYProgress, [0, 0.2], ["0%", "50%"]);
-  const yHero2 = useTransform(scrollYProgress, [0, 0.2], ["0%", "-50%"]);
-  const scaleVideo = useTransform(scrollYProgress, [0.05, 0.2], [0.8, 1]);
-  const opacityHero = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
+  // Parallax Values for desktop
+  const xHeroLeft = useTransform(scrollYProgress, [0, 0.15], ["0%", "-15%"]);
+  const xHeroRight = useTransform(scrollYProgress, [0, 0.15], ["0%", "15%"]);
+  const scaleVideo = useTransform(scrollYProgress, [0.05, 0.2], [0.92, 1]);
 
   // Media State
   const [mediaItems, setMediaItems] = useState<MediaProject[]>(defaultMediaItems);
@@ -162,7 +172,6 @@ export default function Home() {
           .order('created_at', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          // Merge Supabase items with defaults
           setMediaItems(data);
         }
       } catch (e) {
@@ -199,12 +208,12 @@ export default function Home() {
   const featuredVideo = mediaItems.find((v) => v.is_featured) || mediaItems[0];
 
   return (
-    <div ref={containerRef} className="spotlight-wrapper min-h-[300vh] bg-black text-white selection:bg-white selection:text-black cursor-none">
+    <div ref={containerRef} className="spotlight-wrapper min-h-screen bg-black text-white selection:bg-white selection:text-black md:cursor-none w-full overflow-x-hidden">
       
       {/* --- CINEMATIC BACKGROUND --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <motion.div 
-          initial={{ scale: 1.1 }}
+          initial={{ scale: 1.05 }}
           animate={{ scale: 1 }}
           transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
           className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=3000&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-luminosity"
@@ -215,177 +224,202 @@ export default function Home() {
       <div className="bg-noise" />
       <CustomCursor />
       
-      {/* Floating Navbar */}
+      {/* Responsive Floating Navbar */}
       <motion.nav 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed top-8 left-1/2 -translate-x-1/2 w-full max-w-[90vw] z-50 px-8 flex justify-between items-center mix-blend-difference"
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-4 md:top-8 left-1/2 -translate-x-1/2 w-[92%] max-w-6xl z-50 px-4 md:px-8 py-3 md:py-4 glass-card rounded-full flex justify-between items-center"
       >
-        <div className="text-xl font-medium tracking-tight">
-          CENONMATE
-        </div>
-        <div className="hidden md:flex gap-12 text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white/50">
+        <Link href="/" className="text-lg md:text-xl font-black tracking-tight flex items-center gap-1">
+          CENON<span className="text-cyan-400">MATE</span>
+        </Link>
+        
+        <div className="hidden md:flex gap-8 text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white/50">
           <a href="#showcase" className="hover:text-white transition-colors">Videos & Reels</a>
           <a href="#expertise" className="hover:text-white transition-colors">Expertise</a>
           <a href="#contact" className="hover:text-white transition-colors">Contact</a>
         </div>
-        <a href="#contact" className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.2em] font-bold border border-white/20 px-6 py-3 rounded-full hover:bg-white hover:text-black transition-all duration-500">
-          Available for Hire <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+
+        <a 
+          href="#contact" 
+          className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.15em] font-bold bg-white/10 hover:bg-white hover:text-black border border-white/20 px-4 md:px-6 py-2 md:py-2.5 rounded-full transition-all"
+        >
+          <span>Hire Me</span> 
+          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
         </a>
       </motion.nav>
 
-      {/* Hero Section (Kinetic Typography) */}
-      <section className="sticky top-0 h-screen flex flex-col justify-center items-center overflow-hidden z-10">
-        <motion.div style={{ opacity: opacityHero }} className="w-full relative flex flex-col items-center">
+      {/* Hero Section (Fully Responsive for Mobile/Tablet/Desktop) */}
+      <section className="relative min-h-[92dvh] md:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 pt-28 md:pt-32 pb-16 overflow-hidden z-10">
+        <div className="w-full max-w-6xl mx-auto flex flex-col items-center relative">
           
-          <motion.div style={{ y: yHero2 }} className="absolute z-0 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-900/20 to-purple-900/20 rounded-full blur-[100px] mix-blend-screen" />
+          {/* Subtle Ambient Orb */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[450px] md:w-[600px] h-[280px] sm:h-[450px] md:h-[600px] bg-gradient-to-tr from-cyan-900/20 via-purple-900/20 to-transparent rounded-full blur-[80px] md:blur-[120px] mix-blend-screen -z-10 pointer-events-none" />
           
-          <motion.h1 
-            style={{ x: useTransform(scrollYProgress, [0, 0.2], ["0%", "-30%"]) }}
-            className="text-[12vw] font-medium leading-[0.8] tracking-tighter whitespace-nowrap z-10 text-outline mix-blend-difference cursor-default"
-          >
-            ARTIFICIAL
-          </motion.h1>
-          
-          <motion.div 
-            style={{ x: useTransform(scrollYProgress, [0, 0.2], ["0%", "30%"]) }}
-            className="flex items-center gap-8 z-10"
-          >
-            <div className="hidden md:block w-32 h-[2px] bg-white/20" />
-            <h1 className="text-[12vw] font-medium leading-[0.8] tracking-tighter whitespace-nowrap cursor-default">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card text-[0.65rem] sm:text-xs uppercase tracking-[0.2em] text-cyan-300 font-bold mb-6 border border-cyan-500/30">
+            <Flame className="w-3.5 h-3.5 text-cyan-400" /> AI Video Agency & 3D Design
+          </div>
+
+          {/* Heading with responsive font sizes */}
+          <div className="w-full flex flex-col items-center">
+            <motion.h1 
+              style={{ x: isDesktop ? xHeroLeft : 0 }}
+              className="text-4xl sm:text-6xl md:text-7xl lg:text-[7.5vw] font-black leading-[0.95] tracking-tight md:tracking-tighter text-outline"
+            >
+              ARTIFICIAL
+            </motion.h1>
+            
+            <motion.h1 
+              style={{ x: isDesktop ? xHeroRight : 0 }}
+              className="text-4xl sm:text-6xl md:text-7xl lg:text-[7.5vw] font-black leading-[0.95] tracking-tight md:tracking-tighter text-white mt-1 sm:mt-2"
+            >
               INTELLIGENCE
-            </h1>
-          </motion.div>
+            </motion.h1>
+          </div>
 
-          <motion.p 
-            style={{ y: yHero1 }}
-            className="mt-16 text-lg md:text-xl text-white/40 max-w-xl mx-auto font-light text-center z-10"
-          >
-            Architecting high-end digital experiences. <br/>Video Editing • 3D Design • YouTube & Reels
-          </motion.p>
+          <p className="mt-6 md:mt-10 text-sm sm:text-base md:text-xl text-white/50 max-w-xl mx-auto font-light leading-relaxed px-2">
+            Architecting high-converting visual assets. Specialized in next-gen AI video editing, 3D product simulation, and viral storytelling.
+          </p>
 
-        </motion.div>
+          <div className="mt-8 md:mt-12 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-4">
+            <a 
+              href="#showcase" 
+              className="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold text-xs uppercase tracking-[0.2em] rounded-full hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+            >
+              <Film className="w-4 h-4" /> Watch My Videos
+            </a>
+            <a 
+              href="#contact" 
+              className="w-full sm:w-auto px-8 py-4 glass-card text-white font-bold text-xs uppercase tracking-[0.2em] rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            >
+              Start Project <MoveRight className="w-4 h-4" />
+            </a>
+          </div>
+
+        </div>
       </section>
 
-      {/* Expanding Main Featured Showreel */}
-      <section id="work" className="relative z-20 w-full min-h-screen flex items-center justify-center bg-black">
+      {/* Main Featured Showreel (Fully Responsive) */}
+      <section id="work" className="relative z-20 w-full py-12 md:py-24 px-4 sm:px-6 flex items-center justify-center">
         <motion.div 
-          style={{ scale: scaleVideo }}
-          className="relative w-[95vw] h-[80vh] md:h-[90vh] bg-[#0a0a0a] rounded-[2rem] overflow-hidden group border border-white/5"
+          style={{ scale: isDesktop ? scaleVideo : 1 }}
+          className="relative w-full max-w-6xl aspect-[16/9] bg-[#0a0a0a] rounded-2xl md:rounded-3xl overflow-hidden group border border-white/10 shadow-2xl"
         >
           <div 
             style={{ backgroundImage: `url(${featuredVideo?.thumbnail_url || 'https://i.ytimg.com/vi/5438rqudvek/maxresdefault.jpg'})` }}
-            className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity group-hover:scale-105 transition-transform duration-[2s] ease-out" 
+            className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-75 transition-all duration-700" 
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
           
+          {/* Centered Play Button */}
           <button 
             onClick={() => setActiveModalVideo(featuredVideo)}
-            className="absolute inset-0 flex items-center justify-center cursor-pointer"
+            className="absolute inset-0 flex items-center justify-center cursor-pointer group"
+            aria-label="Play Featured Video"
           >
-            <div className="w-24 h-24 rounded-full border-[1px] border-white/20 flex items-center justify-center backdrop-blur-xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-700">
-              <Play className="w-8 h-8 text-white fill-white group-hover:text-black group-hover:fill-black ml-1 transition-colors" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full border border-white/30 flex items-center justify-center backdrop-blur-xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-500 shadow-2xl">
+              <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white fill-white group-hover:text-black group-hover:fill-black ml-1 transition-colors" />
             </div>
           </button>
 
-          <div className="absolute bottom-12 left-12 right-12 flex flex-col md:flex-row justify-between md:items-end gap-6 pointer-events-none">
+          {/* Bottom Video Info */}
+          <div className="absolute bottom-4 sm:bottom-6 md:bottom-10 left-4 sm:left-6 md:left-10 right-4 sm:right-6 md:right-10 flex flex-col sm:flex-row justify-between sm:items-end gap-3 pointer-events-none">
             <div>
-              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-white/50 mb-3">Featured Showreel</p>
-              <h2 className="text-4xl md:text-6xl font-medium tracking-tight">
+              <p className="text-[0.6rem] uppercase tracking-[0.25em] text-cyan-400 font-bold mb-1">Featured Video</p>
+              <h2 className="text-lg sm:text-2xl md:text-4xl font-bold tracking-tight text-white line-clamp-1">
                 {featuredVideo?.title}
               </h2>
             </div>
-            <div className="flex gap-4">
-              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">YouTube</span>
-              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">AI Video</span>
-              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">Shorts</span>
+            <div className="flex gap-2 shrink-0">
+              <span className="glass-card px-3 sm:px-4 py-1 rounded-full text-[0.65rem] uppercase tracking-wider font-bold">YouTube</span>
+              <span className="glass-card px-3 sm:px-4 py-1 rounded-full text-[0.65rem] uppercase tracking-wider font-bold">Services</span>
             </div>
           </div>
         </motion.div>
       </section>
 
       {/* ======================================================== */}
-      {/* --- MASSIVE MEDIA SHOWCASE: VIDEOS, SHORTS & REELS --- */}
+      {/* --- RESPONSIVE MEDIA VAULT: VIDEOS, SHORTS & REELS --- */}
       {/* ======================================================== */}
-      <section id="showcase" className="relative z-20 w-full bg-black py-36 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="showcase" className="relative z-20 w-full py-16 md:py-32 px-4 sm:px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
           
           {/* Header & Controls */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 md:mb-16">
             <div>
-              <div className="inline-flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.3em] text-cyan-400 font-bold mb-3">
-                <Flame className="w-4 h-4 text-cyan-400" /> Cenonmate Media Vault
+              <div className="inline-flex items-center gap-2 text-[0.65rem] sm:text-xs uppercase tracking-[0.25em] text-cyan-400 font-bold mb-2">
+                <Flame className="w-3.5 h-3.5 text-cyan-400" /> Cenonmate Media Vault
               </div>
-              <h2 className="text-4xl md:text-7xl font-light tracking-tight">
+              <h2 className="text-3xl sm:text-5xl md:text-6xl font-light tracking-tight">
                 VIDEOS, SHORTS <br /><span className="text-white/40">& INSTAGRAM REELS.</span>
               </h2>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex flex-wrap gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl">
-              <button
-                onClick={() => setActiveFilter('all')}
-                className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
-                  activeFilter === 'all' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'
-                }`}
-              >
-                All ({mediaItems.length})
-              </button>
-              <button
-                onClick={() => setActiveFilter('video')}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
-                  activeFilter === 'video' ? 'bg-red-500 text-white shadow-lg' : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <Film className="w-3.5 h-3.5" /> Videos (16:9)
-              </button>
-              <button
-                onClick={() => setActiveFilter('short')}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
-                  activeFilter === 'short' ? 'bg-red-600 text-white shadow-lg' : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" /> Shorts (9:16)
-              </button>
-              <button
-                onClick={() => setActiveFilter('reel')}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold transition-all ${
-                  activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg' : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" /> Reels (9:16)
-              </button>
+            {/* Scrollable Filter Tabs (Mobile Horizontal Swipe) */}
+            <div className="w-full md:w-auto overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl w-max">
+                <button
+                  onClick={() => setActiveFilter('all')}
+                  className={`px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'all' ? 'bg-white text-black shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  All ({mediaItems.length})
+                </button>
+                <button
+                  onClick={() => setActiveFilter('video')}
+                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'video' ? 'bg-red-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Film className="w-3 h-3" /> Videos
+                </button>
+                <button
+                  onClick={() => setActiveFilter('short')}
+                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'short' ? 'bg-red-600 text-white shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3 h-3" /> Shorts
+                </button>
+                <button
+                  onClick={() => setActiveFilter('reel')}
+                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3 h-3" /> Reels
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Dynamic Grid: Landscape Videos & Vertical Phone Frames */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Fully Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredMedia.map((item, index) => {
               const isVertical = item.media_type === 'short' || item.media_type === 'reel';
 
               return (
-                <motion.div
+                <div
                   key={item.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className={`group relative rounded-3xl overflow-hidden glass-card border border-white/10 flex flex-col justify-between ${
-                    isVertical ? 'aspect-[9/16] md:max-w-[340px] mx-auto w-full' : 'aspect-video col-span-1 md:col-span-2 lg:col-span-2'
+                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden glass-card border border-white/10 flex flex-col justify-between ${
+                    isVertical 
+                      ? 'aspect-[9/16] w-full max-w-[320px] mx-auto' 
+                      : 'aspect-[16/9] col-span-1 sm:col-span-2 lg:col-span-2 w-full'
                   }`}
                 >
                   {/* Poster / Thumbnail Image */}
                   <div
                     style={{ backgroundImage: `url(${item.thumbnail_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000'})` }}
-                    className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700"
+                    className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-80 transition-all duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
                   {/* Badge on Top */}
-                  <div className="relative z-10 p-6 flex justify-between items-center">
+                  <div className="relative z-10 p-4 sm:p-5 flex justify-between items-center">
                     <span
-                      className={`text-[0.65rem] uppercase tracking-widest font-black px-3 py-1 rounded-full border ${
+                      className={`text-[0.6rem] uppercase tracking-wider font-black px-2.5 py-1 rounded-full border ${
                         item.media_type === 'video'
                           ? 'bg-red-500/20 text-red-400 border-red-500/40'
                           : item.media_type === 'short'
@@ -400,10 +434,10 @@ export default function Home() {
                       href={item.video_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-9 h-9 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:scale-110 transition-all"
-                      title="Open in platform"
+                      className="w-8 h-8 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                      title="Open link"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
 
@@ -417,15 +451,15 @@ export default function Home() {
                           window.open(item.video_url, '_blank');
                         }
                       }}
-                      className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-125 group-hover:bg-white group-hover:text-black transition-all duration-500 shadow-2xl"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-300 shadow-xl"
                     >
-                      <Play className="w-6 h-6 fill-current ml-1" />
+                      <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-0.5" />
                     </button>
                   </div>
 
                   {/* Content & Details at Bottom */}
-                  <div className="relative z-10 p-6 space-y-2">
-                    <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                  <div className="relative z-10 p-4 sm:p-6 space-y-1 sm:space-y-2">
+                    <h3 className="text-base sm:text-xl font-bold tracking-tight text-white line-clamp-1">
                       {item.title}
                     </h3>
                     {item.description && (
@@ -434,23 +468,23 @@ export default function Home() {
                       </p>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
 
           {/* Social Channel Links Banner */}
-          <div className="mt-20 p-8 md:p-12 rounded-3xl bg-white/[0.02] border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="mt-12 md:mt-20 p-6 sm:p-10 rounded-2xl md:rounded-3xl glass-card flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
             <div>
-              <h4 className="text-2xl font-bold mb-1">Want to see more live daily edits?</h4>
-              <p className="text-sm text-white/40">Subscribe to our official YouTube channel and follow us on Instagram.</p>
+              <h4 className="text-xl sm:text-2xl font-bold mb-1">Want to see daily video creations?</h4>
+              <p className="text-xs sm:text-sm text-white/40">Subscribe to our official YouTube channel and follow us on Instagram.</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <a
                 href="https://www.youtube.com/@Cenonmate-z6j"
                 target="_blank"
                 rel="noreferrer"
-                className="px-6 py-3 rounded-full bg-red-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-red-500 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-full bg-red-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-red-500 transition-all flex items-center justify-center gap-2"
               >
                 <Film className="w-4 h-4" /> YouTube @Cenonmate
               </a>
@@ -458,7 +492,7 @@ export default function Home() {
                 href="https://www.instagram.com/cenon_mate/"
                 target="_blank"
                 rel="noreferrer"
-                className="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2"
               >
                 <Smartphone className="w-4 h-4" /> Instagram @cenon_mate
               </a>
@@ -469,7 +503,7 @@ export default function Home() {
       </section>
 
       {/* ======================================================== */}
-      {/* --- VIDEO PLAYER MODAL --- */}
+      {/* --- RESPONSIVE VIDEO PLAYER MODAL --- */}
       {/* ======================================================== */}
       <AnimatePresence>
         {activeModalVideo && (
@@ -477,25 +511,26 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 md:p-12"
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 md:p-10"
             onClick={() => setActiveModalVideo(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className={`relative bg-black rounded-3xl overflow-hidden border border-white/20 shadow-2xl ${
+              exit={{ scale: 0.95, opacity: 0 }}
+              className={`relative bg-black rounded-2xl md:rounded-3xl overflow-hidden border border-white/20 shadow-2xl ${
                 activeModalVideo.media_type === 'short' || activeModalVideo.media_type === 'reel'
-                  ? 'w-full max-w-[420px] aspect-[9/16]'
-                  : 'w-full max-w-5xl aspect-video'
+                  ? 'w-full max-w-[360px] aspect-[9/16]'
+                  : 'w-full max-w-4xl aspect-[16/9]'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setActiveModalVideo(null)}
-                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                aria-label="Close modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
 
               {getYouTubeEmbedUrl(activeModalVideo.video_url) ? (
@@ -507,15 +542,15 @@ export default function Home() {
                   className="w-full h-full border-0"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
-                  <Film className="w-16 h-16 text-cyan-400 mb-4 animate-bounce" />
-                  <h3 className="text-2xl font-bold mb-2">{activeModalVideo.title}</h3>
-                  <p className="text-sm text-white/50 mb-6">{activeModalVideo.description}</p>
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                  <Film className="w-12 h-12 text-cyan-400 mb-4 animate-bounce" />
+                  <h3 className="text-xl font-bold mb-2">{activeModalVideo.title}</h3>
+                  <p className="text-xs text-white/50 mb-6">{activeModalVideo.description}</p>
                   <a
                     href={activeModalVideo.video_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-8 py-3.5 bg-white text-black font-bold rounded-full text-xs uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
+                    className="px-6 py-3 bg-white text-black font-bold rounded-full text-xs uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
                   >
                     Watch Directly on Platform <ExternalLink className="w-4 h-4" />
                   </a>
@@ -526,43 +561,39 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Sticky Scroll Expertise Section */}
-      <section id="expertise" className="relative z-20 w-full bg-black py-48">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row gap-12 md:gap-32">
+      {/* Expertise Section (Fully Responsive) */}
+      <section id="expertise" className="relative z-20 w-full py-20 md:py-36 px-4 sm:px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row gap-8 md:gap-20">
             
-            {/* Sticky Sidebar */}
+            {/* Sidebar info */}
             <div className="md:w-1/3">
-              <div className="sticky top-48">
-                <h2 className="text-[0.7rem] uppercase tracking-[0.3em] text-white/40 mb-6">Our Arsenal</h2>
-                <h3 className="text-4xl md:text-5xl font-light tracking-tight leading-tight">
+              <div className="md:sticky md:top-32 space-y-4">
+                <div className="text-[0.65rem] uppercase tracking-[0.25em] text-white/40 font-bold">Our Capabilities</div>
+                <h3 className="text-3xl sm:text-4xl font-light tracking-tight leading-tight">
                   Crafting the impossible.
                 </h3>
-                <p className="mt-8 text-white/40 font-light leading-relaxed">
-                  We don&apos;t use templates. We build bespoke visual architectures using advanced AI frameworks and raw creativity.
+                <p className="text-sm text-white/40 font-light leading-relaxed">
+                  We don&apos;t use generic templates. We build bespoke visual systems using industry-leading AI models and tailored editing workflows.
                 </p>
               </div>
             </div>
 
-            {/* Scrollable Cards */}
-            <div className="md:w-2/3 space-y-8">
+            {/* Service Cards */}
+            <div className="md:w-2/3 space-y-6">
               {[
-                { num: '01', title: 'AI Cinematic Editing', desc: 'Transforming raw footage into high-retention, cinematic masterpieces. We use AI to enhance color, pacing, and visual effects.' },
-                { num: '02', title: 'Hyper-Realistic 3D', desc: 'Product designs and visualizations that look indistinguishable from reality. Elevate your brand perception instantly.' },
-                { num: '03', title: 'Generative Assets', desc: 'Custom AI-generated graphics, environments, and concept art tailored exclusively for your project.' },
+                { num: '01', title: 'AI Cinematic Editing', desc: 'Transforming raw footage into high-retention, cinematic masterpieces. Advanced audio design, pacing, and visual effects.' },
+                { num: '02', title: 'Hyper-Realistic 3D Products', desc: 'Photorealistic mockups and dynamic rotating simulations that skyrocket your brand perception.' },
+                { num: '03', title: 'Custom Generative Assets', desc: 'Bespoke AI-generated graphics, futuristic environments, and concept imagery tailored exclusively for your project.' },
               ].map((item, index) => (
-                <motion.div 
+                <div 
                   key={index}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  className="glass-card p-12 md:p-16 rounded-[2rem] group"
+                  className="glass-card p-6 sm:p-10 rounded-2xl md:rounded-3xl"
                 >
-                  <div className="text-[0.8rem] uppercase tracking-[0.2em] text-white/30 mb-8 font-bold">{item.num}</div>
-                  <h4 className="text-3xl md:text-4xl font-medium tracking-tight mb-6">{item.title}</h4>
-                  <p className="text-lg text-white/40 font-light leading-relaxed">{item.desc}</p>
-                </motion.div>
+                  <div className="text-xs uppercase tracking-widest text-white/30 mb-4 font-bold">{item.num}</div>
+                  <h4 className="text-xl sm:text-2xl font-bold tracking-tight mb-3">{item.title}</h4>
+                  <p className="text-xs sm:text-sm text-white/50 font-light leading-relaxed">{item.desc}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -570,23 +601,23 @@ export default function Home() {
       </section>
 
       {/* Interactive Contact & Lead Section (Synced to Supabase) */}
-      <section className="relative z-20 w-full bg-black py-24 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="glass-card p-8 md:p-16 rounded-[2.5rem]">
-            <h3 className="text-3xl md:text-5xl font-light tracking-tight mb-4">Start a Collaboration</h3>
-            <p className="text-white/40 font-light mb-10">Send your project brief. We respond within 24 hours.</p>
+      <section id="contact" className="relative z-20 w-full py-20 md:py-32 px-4 sm:px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <div className="glass-card p-6 sm:p-12 md:p-16 rounded-2xl md:rounded-3xl">
+            <h3 className="text-2xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">Start a Collaboration</h3>
+            <p className="text-xs sm:text-sm text-white/40 font-light mb-8">Send your project brief. We respond within 24 hours.</p>
 
             {submitted ? (
-              <div className="p-8 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center gap-4">
-                <CheckCircle2 className="w-8 h-8 text-cyan-400 shrink-0" />
+              <div className="p-6 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center gap-4">
+                <CheckCircle2 className="w-6 h-6 text-cyan-400 shrink-0" />
                 <div>
-                  <h4 className="font-bold text-lg">Inquiry Received</h4>
-                  <p className="text-sm text-cyan-300/80 mt-1">Thank you. Shoayibul will review your project and get back to you shortly.</p>
+                  <h4 className="font-bold text-base">Inquiry Received</h4>
+                  <p className="text-xs text-cyan-300/80 mt-1">Thank you. Shoayibul will review your project and get back to you shortly.</p>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleInquirySubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+              <form onSubmit={handleInquirySubmit} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="text-xs uppercase tracking-widest text-white/40 font-bold block mb-2">Name</label>
                     <input
@@ -595,7 +626,7 @@ export default function Home() {
                       placeholder="Your name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-white transition-all text-sm"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 sm:py-3.5 text-white focus:outline-none focus:border-white transition-all text-sm"
                     />
                   </div>
                   <div>
@@ -606,7 +637,7 @@ export default function Home() {
                       placeholder="you@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-white transition-all text-sm"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 sm:py-3.5 text-white focus:outline-none focus:border-white transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -619,7 +650,7 @@ export default function Home() {
                     placeholder="Describe your video editing or 3D product design goals..."
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-white transition-all text-sm resize-none"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 sm:py-3.5 text-white focus:outline-none focus:border-white transition-all text-sm resize-none"
                   />
                 </div>
 
@@ -628,7 +659,7 @@ export default function Home() {
                   disabled={submitting}
                   className="w-full py-4 rounded-xl bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-gray-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Send className="w-4 h-4" /> {submitting ? 'Submitting...' : 'Send Inquiry'}
+                  <Send className="w-3.5 h-3.5" /> {submitting ? 'Submitting...' : 'Send Inquiry'}
                 </button>
               </form>
             )}
@@ -636,55 +667,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Massive Typography Footer */}
-      <footer id="contact" className="relative z-20 w-full min-h-[80vh] bg-black flex flex-col justify-end overflow-hidden pb-12">
-        <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/10 to-transparent pointer-events-none" />
-        
-        <div className="max-w-7xl mx-auto px-6 w-full flex flex-col md:flex-row justify-between items-end gap-16 mb-24 relative z-10">
-          <div className="space-y-8 w-full md:w-auto">
-            <h2 className="text-4xl md:text-6xl font-light tracking-tighter">
-              Let&apos;s craft <br/><i className="text-white/50">greatness.</i>
-            </h2>
-            <div className="space-y-2">
-              <a href="mailto:hello@cenonmate.com" className="inline-flex items-center gap-4 text-sm uppercase tracking-[0.2em] font-bold border-b border-white/20 pb-2 hover:border-white transition-all group">
-                hello@cenonmate.com <MoveRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-              </a>
-              <div className="pt-2">
-                <Link href="/admin" className="inline-flex items-center gap-2 text-xs text-white/20 hover:text-white/60 transition-colors">
-                  <Lock className="w-3 h-3" /> Admin Dashboard
-                </Link>
-              </div>
+      {/* Responsive Footer */}
+      <footer className="relative z-20 w-full bg-black border-t border-white/10 py-12 md:py-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          
+          <div className="space-y-2 text-center md:text-left">
+            <div className="text-xl font-black tracking-tight">
+              CENON<span className="text-cyan-400">MATE</span>
+            </div>
+            <p className="text-xs text-white/40">Shoayibul Islam Shithel — Visual Creator & Editor</p>
+            <div className="pt-1">
+              <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white transition-colors">
+                <Lock className="w-3 h-3" /> Admin Dashboard
+              </Link>
             </div>
           </div>
 
-          {/* Unique Social Links */}
-          <div className="flex gap-4 w-full md:w-auto">
-            <a href="https://www.youtube.com/@Cenonmate-z6j" target="_blank" rel="noreferrer" className="glass-card w-24 h-24 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-500">
-              <span className="text-[0.6rem] uppercase tracking-widest font-bold">YouTube</span>
+          {/* Social Links Pills */}
+          <div className="flex flex-wrap justify-center gap-3">
+            <a 
+              href="https://www.youtube.com/@Cenonmate-z6j" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="px-5 py-2.5 rounded-full glass-card hover:bg-white hover:text-black transition-all text-xs font-bold uppercase tracking-wider"
+            >
+              YouTube
             </a>
-            <a href="https://www.instagram.com/cenon_mate/" target="_blank" rel="noreferrer" className="glass-card w-24 h-24 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-500">
-              <span className="text-[0.6rem] uppercase tracking-widest font-bold">Insta</span>
+            <a 
+              href="https://www.instagram.com/cenon_mate/" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="px-5 py-2.5 rounded-full glass-card hover:bg-white hover:text-black transition-all text-xs font-bold uppercase tracking-wider"
+            >
+              Instagram
             </a>
-            <a href="https://www.facebook.com/profile.php?id=61594673284423" target="_blank" rel="noreferrer" className="glass-card w-24 h-24 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-500">
-              <span className="text-[0.6rem] uppercase tracking-widest font-bold">FB</span>
+            <a 
+              href="https://www.facebook.com/profile.php?id=61594673284423" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="px-5 py-2.5 rounded-full glass-card hover:bg-white hover:text-black transition-all text-xs font-bold uppercase tracking-wider"
+            >
+              Facebook
             </a>
           </div>
+
         </div>
 
-        {/* Giant Footer Marquee */}
-        <div className="w-full overflow-hidden whitespace-nowrap relative z-10 mix-blend-difference opacity-50">
-          <motion.div 
-            className="flex text-[15vw] font-black tracking-tighter leading-none"
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-          >
-            <span className="pr-12">CENONMATE</span>
-            <span className="pr-12">CENONMATE</span>
-            <span className="pr-12">CENONMATE</span>
-            <span className="pr-12">CENONMATE</span>
-          </motion.div>
+        <div className="max-w-6xl mx-auto text-center mt-8 pt-8 border-t border-white/5 text-[0.65rem] text-white/30 uppercase tracking-widest">
+          © {new Date().getFullYear()} Cenonmate. All rights reserved.
         </div>
       </footer>
+
     </div>
   );
 }
