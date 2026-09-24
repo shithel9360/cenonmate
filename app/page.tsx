@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Play, Maximize2, MoveRight, Send, CheckCircle2, Lock, X, Film, Smartphone, Flame, ExternalLink } from 'lucide-react';
+import { 
+  Play, Maximize2, MoveRight, Send, CheckCircle2, Lock, X, Film, 
+  Smartphone, Flame, ExternalLink, Volume2, VolumeX, Sparkles 
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
@@ -28,59 +31,346 @@ const defaultMediaItems: MediaProject[] = [
     is_featured: true,
   },
   {
-    id: 'default-yt-2',
-    title: 'Cenonmate 2026 AI Video Showreel',
-    video_url: 'https://www.youtube.com/@Cenonmate-z6j',
-    thumbnail_url: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?q=80&w=1600&auto=format&fit=crop',
-    description: 'Commercial grade AI video editing, pacing, and sound design for global brands.',
-    media_type: 'video',
-    is_featured: false,
+    id: 'default-reel-1',
+    title: 'Speed Apple',
+    video_url: 'https://www.instagram.com/reel/Ddryk3-zBGm/?utm_source=ig_web_copy_link&stkn=MzRlODBiNWFlZA==',
+    thumbnail_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop',
+    description: 'Speed Bangladesh visual showcase',
+    media_type: 'reel',
   },
   {
     id: 'default-short-1',
     title: 'Speed Edit: AI Visual Hook in 5 Seconds',
-    video_url: 'https://www.youtube.com/@Cenonmate-z6j',
-    thumbnail_url: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=1000&auto=format&fit=crop',
+    video_url: 'https://www.youtube.com/watch?v=5438rqudvek',
+    thumbnail_url: 'https://i.ytimg.com/vi/5438rqudvek/hqdefault.jpg',
     description: 'How to retain 85% audience attention with pacing.',
     media_type: 'short',
   },
   {
-    id: 'default-short-2',
-    title: '3D Hyper-Realistic Product Simulation',
-    video_url: 'https://www.youtube.com/@Cenonmate-z6j',
-    thumbnail_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop',
-    description: 'From 2D concept to rotating 3D cinematic rendering.',
-    media_type: 'short',
-  },
-  {
-    id: 'default-reel-1',
-    title: 'Cenonmate Instagram Reel: Neon Cyber Aesthetics',
-    video_url: 'https://www.instagram.com/cenon_mate/',
-    thumbnail_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop',
-    description: 'Exclusive behind-the-scenes editing workflow.',
-    media_type: 'reel',
-  },
-  {
-    id: 'default-reel-2',
-    title: 'AI Color Grading Before vs After',
-    video_url: 'https://www.instagram.com/cenon_mate/',
-    thumbnail_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop',
-    description: 'Cinematic color profile matching using AI tools.',
-    media_type: 'reel',
-  },
+    id: 'default-yt-2',
+    title: 'Cenonmate 2026 AI Video Showreel',
+    video_url: 'https://www.youtube.com/watch?v=5438rqudvek',
+    thumbnail_url: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?q=80&w=1600&auto=format&fit=crop',
+    description: 'Commercial grade AI video editing, pacing, and sound design for global brands.',
+    media_type: 'video',
+    is_featured: false,
+  }
 ];
 
-function getYouTubeEmbedUrl(url: string): string | null {
-  if (!url) return null;
-  let videoId = '';
-  if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
-  } else if (url.includes('watch?v=')) {
-    videoId = url.split('watch?v=')[1]?.split('&')[0] || '';
-  } else if (url.includes('shorts/')) {
-    videoId = url.split('shorts/')[1]?.split('?')[0] || '';
+interface ParsedMedia {
+  platform: 'youtube' | 'youtube_short' | 'instagram' | 'direct' | 'unknown';
+  id: string;
+  embedUrl: string;
+  thumbnailUrl: string;
+  hqThumbnailUrl: string;
+  cleanUrl: string;
+}
+
+function parseMediaUrl(url: string): ParsedMedia {
+  if (!url) {
+    return { platform: 'unknown', id: '', embedUrl: '', thumbnailUrl: '', hqThumbnailUrl: '', cleanUrl: '' };
   }
-  return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : null;
+
+  const trimmed = url.trim();
+
+  // 1. YouTube Shorts (e.g. youtube.com/shorts/<id>)
+  const ytShortMatch = trimmed.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/i);
+  if (ytShortMatch) {
+    const id = ytShortMatch[1];
+    return {
+      platform: 'youtube_short',
+      id,
+      embedUrl: `https://www.youtube.com/embed/${id}?autoplay=1&controls=1&rel=0&playsinline=1`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+      hqThumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      cleanUrl: `https://www.youtube.com/shorts/${id}`
+    };
+  }
+
+  // 2. YouTube Standard Video (watch?v=, youtu.be/, /embed/)
+  let ytId = '';
+  if (trimmed.includes('youtu.be/')) {
+    ytId = trimmed.split('youtu.be/')[1]?.split(/[?&]/)[0] || '';
+  } else if (trimmed.includes('watch?v=')) {
+    ytId = trimmed.split('watch?v=')[1]?.split(/[?&]/)[0] || '';
+  } else if (trimmed.includes('/embed/')) {
+    ytId = trimmed.split('/embed/')[1]?.split(/[?&]/)[0] || '';
+  }
+
+  if (ytId) {
+    return {
+      platform: 'youtube',
+      id: ytId,
+      embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&controls=1&rel=0&playsinline=1`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${ytId}/maxresdefault.jpg`,
+      hqThumbnailUrl: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
+      cleanUrl: `https://www.youtube.com/watch?v=${ytId}`
+    };
+  }
+
+  // 3. Instagram Reel or Post (instagram.com/reel/<id>, instagram.com/p/<id>)
+  const igMatch = trimmed.match(/(?:instagram\.com|instagr\.am)\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/i);
+  if (igMatch) {
+    const code = igMatch[1];
+    return {
+      platform: 'instagram',
+      id: code,
+      embedUrl: `https://www.instagram.com/reel/${code}/embed/`,
+      thumbnailUrl: '',
+      hqThumbnailUrl: '',
+      cleanUrl: `https://www.instagram.com/reel/${code}/`
+    };
+  }
+
+  // 4. Direct video file (.mp4, .webm, .mov)
+  if (trimmed.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+    return {
+      platform: 'direct',
+      id: trimmed,
+      embedUrl: trimmed,
+      thumbnailUrl: '',
+      hqThumbnailUrl: '',
+      cleanUrl: trimmed
+    };
+  }
+
+  return {
+    platform: 'unknown',
+    id: '',
+    embedUrl: trimmed,
+    thumbnailUrl: '',
+    hqThumbnailUrl: '',
+    cleanUrl: trimmed
+  };
+}
+
+// --- INTERACTIVE MEDIA CARD COMPONENT ---
+interface MediaCardProps {
+  item: MediaProject;
+  onOpenModal: (item: MediaProject) => void;
+  autoPreviewEnabled: boolean;
+}
+
+function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [thumbSrc, setThumbSrc] = useState<string>('');
+  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const parsed = parseMediaUrl(item.video_url);
+  const isVertical = item.media_type === 'short' || item.media_type === 'reel';
+
+  useEffect(() => {
+    if (item.thumbnail_url && item.thumbnail_url.trim()) {
+      setThumbSrc(item.thumbnail_url);
+    } else if (parsed.thumbnailUrl) {
+      setThumbSrc(parsed.thumbnailUrl);
+    } else if (item.media_type === 'reel') {
+      setThumbSrc('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop');
+    } else {
+      setThumbSrc('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop');
+    }
+  }, [item, parsed.thumbnailUrl]);
+
+  const handleMouseEnter = () => {
+    if (!autoPreviewEnabled || isLocked) return;
+    hoverTimer.current = setTimeout(() => {
+      setIsPlaying(true);
+      setIsMuted(true);
+    }, 400);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    if (!isLocked && isPlaying) {
+      setIsPlaying(false);
+    }
+  };
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLocked(true);
+    setIsPlaying(true);
+  };
+
+  const handleStopClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLocked(false);
+    setIsPlaying(false);
+  };
+
+  const handleToggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted(!isMuted);
+  };
+
+  return (
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`group relative rounded-2xl md:rounded-3xl overflow-hidden glass-card border border-white/10 flex flex-col justify-between transition-all duration-300 ${
+        isVertical 
+          ? 'aspect-[9/16] w-full max-w-[340px] mx-auto' 
+          : 'aspect-[16/9] col-span-1 sm:col-span-2 lg:col-span-2 w-full'
+      }`}
+    >
+      {/* 1. PLAYING INLINE VIEW */}
+      {isPlaying ? (
+        <div className="relative w-full h-full bg-black overflow-hidden flex flex-col">
+          {parsed.platform === 'instagram' ? (
+            <iframe
+              src={parsed.embedUrl}
+              title={item.title}
+              className="w-full h-full border-0 rounded-2xl"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : parsed.platform === 'youtube' || parsed.platform === 'youtube_short' ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${parsed.id}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&playlist=${parsed.id}&controls=1&modestbranding=1&playsinline=1`}
+              title={item.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full border-0"
+            />
+          ) : parsed.platform === 'direct' ? (
+            <video
+              src={parsed.embedUrl}
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <iframe
+              src={item.video_url}
+              title={item.title}
+              className="w-full h-full border-0"
+            />
+          )}
+
+          {/* Floating Controls Bar over Playing Video */}
+          <div className="absolute top-3 left-3 right-3 z-30 flex justify-between items-center pointer-events-auto">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-[0.6rem] font-bold text-green-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live on Site
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              {(parsed.platform === 'youtube' || parsed.platform === 'youtube_short' || parsed.platform === 'direct') && (
+                <button
+                  onClick={handleToggleSound}
+                  className={`p-2 rounded-full backdrop-blur-md border transition-all ${
+                    isMuted 
+                      ? 'bg-black/70 border-white/20 text-white/80 hover:text-white' 
+                      : 'bg-cyan-500 text-black border-cyan-400 font-bold'
+                  }`}
+                  title={isMuted ? "Click to Unmute Sound" : "Click to Mute"}
+                >
+                  {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                </button>
+              )}
+
+              <button
+                onClick={() => onOpenModal(item)}
+                className="p-2 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black transition-all"
+                title="Expand to Cinema Modal"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={handleStopClick}
+                className="p-2 rounded-full bg-red-600/90 hover:bg-red-600 text-white backdrop-blur-md border border-red-500/30 transition-all"
+                title="Stop and return to card"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* 2. POSTER / PREVIEW VIEW */
+        <>
+          {/* Background Poster Image */}
+          <div
+            style={{ backgroundImage: `url(${thumbSrc})` }}
+            className="absolute inset-0 bg-cover bg-center opacity-65 group-hover:opacity-85 transition-all duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/20" />
+
+          {/* Top Header Row */}
+          <div className="relative z-10 p-4 sm:p-5 flex justify-between items-center">
+            <span
+              className={`text-[0.6rem] uppercase tracking-wider font-black px-2.5 py-1 rounded-full border backdrop-blur-md ${
+                item.media_type === 'video'
+                  ? 'bg-red-500/20 text-red-300 border-red-500/40'
+                  : item.media_type === 'short'
+                  ? 'bg-red-600/20 text-red-300 border-red-500/40'
+                  : 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border-pink-500/40'
+              }`}
+            >
+              {item.media_type === 'video' ? 'YouTube 16:9' : item.media_type === 'short' ? 'YouTube Short' : 'Instagram Reel'}
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onOpenModal(item)}
+                className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:border-white transition-all"
+                title="Watch in Cinema Mode"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+
+              <a
+                href={parsed.cleanUrl || item.video_url}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-all"
+                title="Open directly on platform profile"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Center Play Button Overlay */}
+          <div className="relative z-10 flex flex-col items-center justify-center my-auto">
+            <button
+              onClick={handlePlayClick}
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-300 shadow-2xl group/btn"
+              title="Click to play right on this website"
+            >
+              <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-0.5" />
+            </button>
+            <span className="text-[0.6rem] uppercase tracking-widest text-white/70 font-semibold bg-black/60 px-3 py-1 rounded-full backdrop-blur-md mt-3 opacity-90 group-hover:opacity-100 transition-opacity border border-white/10">
+              Watch on Website
+            </span>
+          </div>
+
+          {/* Bottom Video Details */}
+          <div className="relative z-10 p-4 sm:p-6 space-y-1 sm:space-y-1.5">
+            <h3 className="text-base sm:text-lg font-bold tracking-tight text-white line-clamp-1">
+              {item.title}
+            </h3>
+            {item.description && (
+              <p className="text-xs text-white/60 font-light line-clamp-2 leading-relaxed">
+                {item.description}
+              </p>
+            )}
+            <p className="text-[0.6rem] text-cyan-400/80 font-medium tracking-wide flex items-center gap-1 pt-1">
+              <span>●</span> Auto-preview on hover • Plays directly on site
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // --- CUSTOM CURSOR (DESKTOP ONLY) ---
@@ -154,6 +444,7 @@ export default function Home() {
   const [mediaItems, setMediaItems] = useState<MediaProject[]>(defaultMediaItems);
   const [activeFilter, setActiveFilter] = useState<'all' | 'video' | 'short' | 'reel'>('all');
   const [activeModalVideo, setActiveModalVideo] = useState<MediaProject | null>(null);
+  const [autoPreviewEnabled, setAutoPreviewEnabled] = useState(true);
 
   // Dynamic CMS States from Supabase
   const [heroBadge, setHeroBadge] = useState('AI Video Agency & 3D Design');
@@ -399,121 +690,72 @@ export default function Home() {
               </h2>
             </div>
 
-            {/* Scrollable Filter Tabs (Mobile Horizontal Swipe) */}
-            <div className="w-full md:w-auto overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="flex gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl w-max">
-                <button
-                  onClick={() => setActiveFilter('all')}
-                  className={`px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                    activeFilter === 'all' ? 'bg-white text-black shadow-md' : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  All ({mediaItems.length})
-                </button>
-                <button
-                  onClick={() => setActiveFilter('video')}
-                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                    activeFilter === 'video' ? 'bg-red-500 text-white shadow-md' : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  <Film className="w-3 h-3" /> Videos
-                </button>
-                <button
-                  onClick={() => setActiveFilter('short')}
-                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                    activeFilter === 'short' ? 'bg-red-600 text-white shadow-md' : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  <Smartphone className="w-3 h-3" /> Shorts
-                </button>
-                <button
-                  onClick={() => setActiveFilter('reel')}
-                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                    activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md' : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  <Smartphone className="w-3 h-3" /> Reels
-                </button>
+            {/* Filter Tabs & Auto-Preview Switch */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
+              {/* Scrollable Filter Tabs */}
+              <div className="w-full sm:w-auto overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="flex gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl w-max">
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                      activeFilter === 'all' ? 'bg-white text-black shadow-md' : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    All ({mediaItems.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('video')}
+                    className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                      activeFilter === 'video' ? 'bg-red-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    <Film className="w-3 h-3" /> Videos
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('short')}
+                    className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                      activeFilter === 'short' ? 'bg-red-600 text-white shadow-md' : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    <Smartphone className="w-3 h-3" /> Shorts
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('reel')}
+                    className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                      activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    <Smartphone className="w-3 h-3" /> Reels
+                  </button>
+                </div>
               </div>
+
+              {/* Auto Preview Switch */}
+              <button
+                onClick={() => setAutoPreviewEnabled(!autoPreviewEnabled)}
+                className={`hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[0.65rem] uppercase tracking-wider font-bold border transition-all ${
+                  autoPreviewEnabled 
+                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 shadow-sm' 
+                    : 'bg-white/5 text-white/40 border-white/10 hover:text-white'
+                }`}
+                title="Toggle automatic muted video preview when hovering"
+              >
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                Hover Preview: {autoPreviewEnabled ? 'ON' : 'OFF'}
+              </button>
             </div>
           </div>
 
-          {/* Fully Responsive Grid */}
+          {/* Fully Responsive Grid with Interactive MediaCards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredMedia.map((item, index) => {
-              const isVertical = item.media_type === 'short' || item.media_type === 'reel';
-
-              return (
-                <div
-                  key={item.id}
-                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden glass-card border border-white/10 flex flex-col justify-between ${
-                    isVertical 
-                      ? 'aspect-[9/16] w-full max-w-[320px] mx-auto' 
-                      : 'aspect-[16/9] col-span-1 sm:col-span-2 lg:col-span-2 w-full'
-                  }`}
-                >
-                  {/* Poster / Thumbnail Image */}
-                  <div
-                    style={{ backgroundImage: `url(${item.thumbnail_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000'})` }}
-                    className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-80 transition-all duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-
-                  {/* Badge on Top */}
-                  <div className="relative z-10 p-4 sm:p-5 flex justify-between items-center">
-                    <span
-                      className={`text-[0.6rem] uppercase tracking-wider font-black px-2.5 py-1 rounded-full border ${
-                        item.media_type === 'video'
-                          ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                          : item.media_type === 'short'
-                          ? 'bg-red-600/30 text-red-300 border-red-500/40'
-                          : 'bg-pink-600/30 text-pink-300 border-pink-500/40'
-                      }`}
-                    >
-                      {item.media_type === 'video' ? 'YouTube 16:9' : item.media_type === 'short' ? 'YouTube Short' : 'Instagram Reel'}
-                    </span>
-
-                    <a
-                      href={item.video_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-8 h-8 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all"
-                      title="Open link"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-
-                  {/* Center Play Button Overlay */}
-                  <div className="relative z-10 flex items-center justify-center my-auto">
-                    <button
-                      onClick={() => {
-                        if (getYouTubeEmbedUrl(item.video_url)) {
-                          setActiveModalVideo(item);
-                        } else {
-                          window.open(item.video_url, '_blank');
-                        }
-                      }}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-300 shadow-xl"
-                    >
-                      <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-0.5" />
-                    </button>
-                  </div>
-
-                  {/* Content & Details at Bottom */}
-                  <div className="relative z-10 p-4 sm:p-6 space-y-1 sm:space-y-2">
-                    <h3 className="text-base sm:text-xl font-bold tracking-tight text-white line-clamp-1">
-                      {item.title}
-                    </h3>
-                    {item.description && (
-                      <p className="text-xs text-white/60 font-light line-clamp-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {filteredMedia.map((item) => (
+              <MediaCard
+                key={item.id}
+                item={item}
+                onOpenModal={setActiveModalVideo}
+                autoPreviewEnabled={autoPreviewEnabled}
+              />
+            ))}
           </div>
 
           {/* Social Channel Links Banner */}
@@ -546,62 +788,96 @@ export default function Home() {
       </section>
 
       {/* ======================================================== */}
-      {/* --- RESPONSIVE VIDEO PLAYER MODAL --- */}
+      {/* --- RESPONSIVE VIDEO PLAYER MODAL (CINEMA THEATER) --- */}
       {/* ======================================================== */}
       <AnimatePresence>
-        {activeModalVideo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 md:p-10"
-            onClick={() => setActiveModalVideo(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className={`relative bg-black rounded-2xl md:rounded-3xl overflow-hidden border border-white/20 shadow-2xl ${
-                activeModalVideo.media_type === 'short' || activeModalVideo.media_type === 'reel'
-                  ? 'w-full max-w-[360px] aspect-[9/16]'
-                  : 'w-full max-w-4xl aspect-[16/9]'
-              }`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setActiveModalVideo(null)}
-                className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
-                aria-label="Close modal"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        {activeModalVideo && (() => {
+          const parsed = parseMediaUrl(activeModalVideo.video_url);
+          const isVertical = activeModalVideo.media_type === 'short' || activeModalVideo.media_type === 'reel';
 
-              {getYouTubeEmbedUrl(activeModalVideo.video_url) ? (
-                <iframe
-                  src={getYouTubeEmbedUrl(activeModalVideo.video_url)!}
-                  title={activeModalVideo.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-                  <Film className="w-12 h-12 text-cyan-400 mb-4 animate-bounce" />
-                  <h3 className="text-xl font-bold mb-2">{activeModalVideo.title}</h3>
-                  <p className="text-xs text-white/50 mb-6">{activeModalVideo.description}</p>
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 md:p-10"
+              onClick={() => setActiveModalVideo(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className={`relative bg-black rounded-3xl overflow-hidden border border-white/20 shadow-2xl flex flex-col ${
+                  isVertical
+                    ? 'w-full max-w-[380px] h-[85vh] max-h-[720px]'
+                    : 'w-full max-w-4xl aspect-[16/9]'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setActiveModalVideo(null)}
+                  className="absolute top-4 right-4 z-40 w-10 h-10 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all shadow-xl"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {/* Video / Embed Player Frame */}
+                <div className="relative w-full h-full flex-1 bg-black overflow-hidden flex items-center justify-center">
+                  {parsed.platform === 'instagram' ? (
+                    <iframe
+                      src={parsed.embedUrl}
+                      title={activeModalVideo.title}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : parsed.platform === 'youtube' || parsed.platform === 'youtube_short' ? (
+                    <iframe
+                      src={parsed.embedUrl}
+                      title={activeModalVideo.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full border-0"
+                    />
+                  ) : parsed.platform === 'direct' ? (
+                    <video
+                      src={parsed.embedUrl}
+                      controls
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <iframe
+                      src={activeModalVideo.video_url}
+                      title={activeModalVideo.title}
+                      className="w-full h-full border-0"
+                    />
+                  )}
+                </div>
+
+                {/* Bottom Bar in Modal */}
+                <div className="p-4 sm:p-5 bg-black/90 border-t border-white/10 flex justify-between items-center gap-3">
+                  <div className="truncate">
+                    <h3 className="font-bold text-white text-sm sm:text-base truncate">{activeModalVideo.title}</h3>
+                    <p className="text-xs text-white/50 truncate">{activeModalVideo.description || 'Cenonmate Visual Reel'}</p>
+                  </div>
                   <a
-                    href={activeModalVideo.video_url}
+                    href={parsed.cleanUrl || activeModalVideo.video_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-6 py-3 bg-white text-black font-bold rounded-full text-xs uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
+                    className="shrink-0 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white hover:text-black transition-all text-xs font-bold flex items-center gap-1.5"
+                    title="View creator post on original platform"
                   >
-                    Watch Directly on Platform <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3 h-3" /> Platform
                   </a>
                 </div>
-              )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       {/* Expertise Section (Fully Responsive) */}

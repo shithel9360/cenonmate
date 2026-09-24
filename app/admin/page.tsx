@@ -554,15 +554,28 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Video URL (YouTube or Instagram) *</label>
+                  <label className="text-xs text-gray-400 block mb-1 font-semibold">Video URL (YouTube or Instagram Reel) *</label>
                   <input
                     type="url"
                     required
-                    placeholder="https://youtube.com/watch?v=... or reel link"
+                    placeholder="https://youtube.com/watch?v=... or https://instagram.com/reel/..."
                     value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setVideoUrl(val);
+                      if (val.includes('instagram.com/reel') || val.includes('instagram.com/p') || val.includes('instagr.am')) {
+                        setMediaType('reel');
+                      } else if (val.includes('youtube.com/shorts') || val.includes('shorts/')) {
+                        setMediaType('short');
+                      } else if (val.includes('youtube.com/watch') || val.includes('youtu.be/')) {
+                        setMediaType('video');
+                      }
+                    }}
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
                   />
+                  <p className="text-[0.65rem] text-gray-400 mt-1">
+                    ✨ Automatically detects YouTube videos, Shorts, and Instagram Reels to play directly on your website!
+                  </p>
                 </div>
 
                 <div>
