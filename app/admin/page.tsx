@@ -101,49 +101,56 @@ export default function AdminPage() {
     }
   };
 
-  // Check sessionStorage on mount
+  // Check authentication status on mount
   useEffect(() => {
-    const sessionAuth = sessionStorage.getItem('cenonmate_admin_auth');
-    if (sessionAuth === 'true') {
-      setIsAuthenticated(true);
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/admin/auth/check');
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    checkAuth();
   }, []);
 
   // Login handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setPinError('');
+    setLoading(true);
 
-    // Check against Supabase or default master password
-    let validPass = 'Shithel02082005';
+    try {
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pin }),
+      });
+      const data = await res.json();
 
-    if (supabase) {
-      try {
-        const { data } = await supabase
-          .from('site_settings')
-          .select('value')
-          .eq('key', 'admin_password')
-          .single();
-
-        if (data && data.value) {
-          validPass = typeof data.value === 'string' ? data.value : JSON.parse(data.value);
-        }
-      } catch (err) {
-        console.error(err);
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+        setPin('');
+        setPinError('');
+      } else {
+        setPinError(data.error || 'Incorrect Password. Please try again.');
       }
-    }
-
-    if (pin === validPass || pin === 'Shithel02082005') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('cenonmate_admin_auth', 'true');
-      setPinError('');
-    } else {
-      setPinError('Incorrect Password. Please try again.');
+    } catch (err: any) {
+      setPinError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('cenonmate_admin_auth');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
     setIsAuthenticated(false);
   };
 
@@ -154,22 +161,24 @@ export default function AdminPage() {
   }, [isAuthenticated, activeTab]);
 
   const loadAllSettings = async () => {
-    if (!supabase) return;
     setLoading(true);
 
     try {
-      // 1. Fetch Media
-      const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
-      if (vData) setVideos(vData);
+      // 1. Fetch Media via Secure Server API
+      const vRes = await fetch('/api/admin/videos');
+      const vData = await vRes.json();
+      if (vData.videos) setVideos(vData.videos);
 
-      // 2. Fetch Inquiries
-      const { data: iData } = await supabase.from('inquiries').select('*').order('created_at', { ascending: false });
-      if (iData) setInquiries(iData);
+      // 2. Fetch Inquiries via Secure Server API
+      const iRes = await fetch('/api/admin/inquiries');
+      const iData = await iRes.json();
+      if (iData.inquiries) setInquiries(iData.inquiries);
 
-      // 3. Fetch CMS Settings
-      const { data: sData } = await supabase.from('site_settings').select('*');
-      if (sData) {
-        sData.forEach((item) => {
+      // 3. Fetch CMS Settings via Secure Server API
+      const sRes = await fetch('/api/admin/settings');
+      const sData = await sRes.json();
+      if (sData.settings) {
+        sData.settings.forEach((item: any) => {
           if (item.key === 'hero_settings' && item.value) {
             const val = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
             setHeroBadge(val.badge || 'AI Video Agency & 3D Design');
@@ -200,15 +209,10 @@ export default function AdminPage() {
   // Add Media
   const handleAddMedia = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
     setSubmitting(true);
     setStatusMsg(null);
 
     try {
-      if (isFeatured) {
-        await supabase.from('videos').update({ is_featured: false }).neq('id', '00000000-0000-0000-0000-000000000000');
-      }
-
       let finalThumb = thumbnailUrl;
       if (!finalThumb && videoUrl) {
         try {
@@ -220,18 +224,21 @@ export default function AdminPage() {
         } catch (e) {}
       }
 
-      const { error } = await supabase.from('videos').insert([
-        {
+      const res = await fetch('/api/admin/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           title,
-          video_url: videoUrl,
-          thumbnail_url: finalThumb || null,
+          videoUrl,
+          thumbnailUrl: finalThumb || null,
           description: description || null,
-          media_type: mediaType,
-          is_featured: isFeatured,
-        },
-      ]);
+          mediaType,
+          isFeatured,
+        }),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add media');
 
       setStatusMsg({ type: 'success', text: 'Media item successfully published to website!' });
       setTitle('');
@@ -249,13 +256,14 @@ export default function AdminPage() {
 
   // Delete Media
   const handleDeleteMedia = async (id: string) => {
-    if (!supabase) return;
     if (!confirm('Are you sure you want to delete this media item?')) return;
 
     try {
-      const { error } = await supabase.from('videos').delete().eq('id', id);
-      if (error) throw error;
-      setVideos(videos.filter((v) => v.id !== id));
+      const res = await fetch(`/api/admin/videos?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete media');
+
+      setVideos((prev) => prev.filter((v) => v.id !== id));
       setStatusMsg({ type: 'success', text: 'Media item deleted.' });
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
@@ -265,7 +273,6 @@ export default function AdminPage() {
   // Save Hero CMS
   const handleSaveHero = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
     setSubmitting(true);
 
     try {
@@ -276,11 +283,14 @@ export default function AdminPage() {
         subtitle: heroSubtitle,
       };
 
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ key: 'hero_settings', value: heroData, updated_at: new Date().toISOString() });
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'hero_settings', value: heroData }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save hero');
 
-      if (error) throw error;
       setStatusMsg({ type: 'success', text: 'Hero Section content saved! Refresh main site to see changes.' });
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
@@ -292,15 +302,17 @@ export default function AdminPage() {
   // Save Services CMS
   const handleSaveServices = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ key: 'services_settings', value: services, updated_at: new Date().toISOString() });
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'services_settings', value: services }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save services');
 
-      if (error) throw error;
       setStatusMsg({ type: 'success', text: 'Services section content updated successfully!' });
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
@@ -312,7 +324,6 @@ export default function AdminPage() {
   // Save Social & Contact Links
   const handleSaveSocial = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
     setSubmitting(true);
 
     try {
@@ -323,11 +334,14 @@ export default function AdminPage() {
         facebook: facebookUrl,
       };
 
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ key: 'social_settings', value: socialData, updated_at: new Date().toISOString() });
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'social_settings', value: socialData }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save social links');
 
-      if (error) throw error;
       setStatusMsg({ type: 'success', text: 'Contact & Social links updated successfully!' });
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
@@ -348,15 +362,17 @@ export default function AdminPage() {
       return;
     }
 
-    if (!supabase) return;
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ key: 'admin_password', value: JSON.stringify(newPassword), updated_at: new Date().toISOString() });
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'admin_password', value: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to change password');
 
-      if (error) throw error;
       setStatusMsg({ type: 'success', text: 'Admin Password successfully changed! Remember to use your new password next time.' });
       setNewPassword('');
       setConfirmPassword('');
@@ -369,12 +385,14 @@ export default function AdminPage() {
 
   // Delete Inquiry
   const handleDeleteInquiry = async (id: string) => {
-    if (!supabase) return;
     if (!confirm('Are you sure you want to remove this client inquiry?')) return;
 
     try {
-      await supabase.from('inquiries').delete().eq('id', id);
-      setInquiries(inquiries.filter((inq) => inq.id !== id));
+      const res = await fetch(`/api/admin/inquiries?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete inquiry');
+
+      setInquiries((prev) => prev.filter((inq) => inq.id !== id));
       setStatusMsg({ type: 'success', text: 'Inquiry removed.' });
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });

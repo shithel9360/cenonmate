@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { 
-  Play, Maximize2, MoveRight, Send, CheckCircle2, Lock, X, Film, 
+  Play, Maximize2, MoveRight, Send, CheckCircle2, X, Film, 
   Smartphone, Flame, ExternalLink, Volume2, VolumeX, Sparkles 
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -379,9 +379,6 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
                 {item.description}
               </p>
             )}
-            <p className="text-[0.6rem] text-cyan-400/80 font-medium tracking-wide flex items-center gap-1 pt-1">
-              <span>●</span> Auto-preview on hover • Plays directly on site
-            </p>
           </div>
         </>
       )}
@@ -706,59 +703,42 @@ export default function Home() {
               </h2>
             </div>
 
-            {/* Filter Tabs & Auto-Preview Switch */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-              {/* Scrollable Filter Tabs */}
-              <div className="w-full sm:w-auto overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                <div className="flex gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl w-max">
-                  <button
-                    onClick={() => setActiveFilter('all')}
-                    className={`px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                      activeFilter === 'all' ? 'bg-white text-black shadow-md' : 'text-white/50 hover:text-white'
-                    }`}
-                  >
-                    All ({mediaItems.length})
-                  </button>
-                  <button
-                    onClick={() => setActiveFilter('video')}
-                    className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                      activeFilter === 'video' ? 'bg-red-500 text-white shadow-md' : 'text-white/50 hover:text-white'
-                    }`}
-                  >
-                    <Film className="w-3 h-3" /> Videos
-                  </button>
-                  <button
-                    onClick={() => setActiveFilter('short')}
-                    className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                      activeFilter === 'short' ? 'bg-red-600 text-white shadow-md' : 'text-white/50 hover:text-white'
-                    }`}
-                  >
-                    <Smartphone className="w-3 h-3" /> Shorts
-                  </button>
-                  <button
-                    onClick={() => setActiveFilter('reel')}
-                    className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
-                      activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md' : 'text-white/50 hover:text-white'
-                    }`}
-                  >
-                    <Smartphone className="w-3 h-3" /> Reels
-                  </button>
-                </div>
+            {/* Filter Tabs */}
+            <div className="w-full sm:w-auto overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-2 bg-white/[0.03] p-1.5 rounded-full border border-white/10 backdrop-blur-xl w-max">
+                <button
+                  onClick={() => setActiveFilter('all')}
+                  className={`px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'all' ? 'bg-white text-black shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  All ({mediaItems.length})
+                </button>
+                <button
+                  onClick={() => setActiveFilter('video')}
+                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'video' ? 'bg-red-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Film className="w-3 h-3" /> Videos
+                </button>
+                <button
+                  onClick={() => setActiveFilter('short')}
+                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'short' ? 'bg-red-600 text-white shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3 h-3" /> Shorts
+                </button>
+                <button
+                  onClick={() => setActiveFilter('reel')}
+                  className={`flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-[0.65rem] sm:text-xs uppercase tracking-wider font-bold transition-all ${
+                    activeFilter === 'reel' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3 h-3" /> Reels
+                </button>
               </div>
-
-              {/* Auto Preview Switch */}
-              <button
-                onClick={() => setAutoPreviewEnabled(!autoPreviewEnabled)}
-                className={`hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[0.65rem] uppercase tracking-wider font-bold border transition-all ${
-                  autoPreviewEnabled 
-                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 shadow-sm' 
-                    : 'bg-white/5 text-white/40 border-white/10 hover:text-white'
-                }`}
-                title="Toggle automatic muted video preview when hovering"
-              >
-                <Sparkles className="w-3 h-3 text-cyan-400" />
-                Hover Preview: {autoPreviewEnabled ? 'ON' : 'OFF'}
-              </button>
             </div>
           </div>
 
@@ -944,7 +924,7 @@ export default function Home() {
                 <CheckCircle2 className="w-6 h-6 text-cyan-400 shrink-0" />
                 <div>
                   <h4 className="font-bold text-base">Inquiry Received</h4>
-                  <p className="text-xs text-cyan-300/80 mt-1">Thank you. Shoayibul will review your project and get back to you shortly.</p>
+                  <p className="text-xs text-cyan-300/80 mt-1">Thank you. Our team will review your project and get back to you shortly.</p>
                 </div>
               </div>
             ) : (
@@ -1007,12 +987,8 @@ export default function Home() {
             <div className="text-xl font-black tracking-tight">
               CENON<span className="text-cyan-400">MATE</span>
             </div>
-            <p className="text-xs text-white/40">Shoayibul Islam Shithel — Visual Creator & Editor</p>
-            <div className="pt-1">
-              <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white transition-colors">
-                <Lock className="w-3 h-3" /> Admin Dashboard
-              </Link>
-            </div>
+            <p className="text-xs text-white/40">Next-Gen AI Video Editing & 3D Simulation Agency</p>
+            <p className="text-[0.65rem] text-white/20">© {new Date().getFullYear()} Cenonmate. All rights reserved.</p>
           </div>
 
           {/* Social Links Pills */}

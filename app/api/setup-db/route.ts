@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { Client } from 'pg';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get('secret');
+import { isAuthenticatedAdmin } from '@/lib/adminAuth';
 
-  if (secret !== 'cenonmate2026') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function GET(request: Request) {
+  const isAuth = await isAuthenticatedAdmin();
+  if (!isAuth) {
+    return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
   }
 
   const connectionString = 
