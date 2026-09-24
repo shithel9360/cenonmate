@@ -155,6 +155,23 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'video' | 'short' | 'reel'>('all');
   const [activeModalVideo, setActiveModalVideo] = useState<MediaProject | null>(null);
 
+  // Dynamic CMS States from Supabase
+  const [heroBadge, setHeroBadge] = useState('AI Video Agency & 3D Design');
+  const [headline1, setHeadline1] = useState('ARTIFICIAL');
+  const [headline2, setHeadline2] = useState('INTELLIGENCE');
+  const [heroSubtitle, setHeroSubtitle] = useState('Architecting high-converting visual assets. Specialized in next-gen AI video editing, 3D product simulation, and viral storytelling.');
+  
+  const [services, setServices] = useState([
+    { num: '01', title: 'AI Cinematic Editing', desc: 'Transforming raw footage into high-retention, cinematic masterpieces. Advanced audio design, pacing, and visual effects.' },
+    { num: '02', title: 'Hyper-Realistic 3D Products', desc: 'Photorealistic mockups and dynamic rotating simulations that skyrocket your brand perception.' },
+    { num: '03', title: 'Custom Generative Assets', desc: 'Bespoke AI-generated graphics, futuristic environments, and concept imagery tailored exclusively for your project.' },
+  ]);
+
+  const [contactEmail, setContactEmail] = useState('hello@cenonmate.com');
+  const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/@Cenonmate-z6j');
+  const [instaUrl, setInstaUrl] = useState('https://www.instagram.com/cenon_mate/');
+  const [facebookUrl, setFacebookUrl] = useState('https://www.facebook.com/profile.php?id=61594673284423');
+
   // Contact Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -163,22 +180,48 @@ export default function Home() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    async function loadProjects() {
+    async function loadData() {
       if (!supabase) return;
       try {
-        const { data, error } = await supabase
+        // Load Videos
+        const { data: vData } = await supabase
           .from('videos')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
-          setMediaItems(data);
+        if (vData && vData.length > 0) {
+          setMediaItems(vData);
+        }
+
+        // Load CMS Site Settings
+        const { data: sData } = await supabase.from('site_settings').select('*');
+        if (sData) {
+          sData.forEach((item) => {
+            if (item.key === 'hero_settings' && item.value) {
+              const val = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+              if (val.badge) setHeroBadge(val.badge);
+              if (val.headline_1) setHeadline1(val.headline_1);
+              if (val.headline_2) setHeadline2(val.headline_2);
+              if (val.subtitle) setHeroSubtitle(val.subtitle);
+            }
+            if (item.key === 'services_settings' && item.value) {
+              const val = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+              if (Array.isArray(val)) setServices(val);
+            }
+            if (item.key === 'social_settings' && item.value) {
+              const val = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+              if (val.email) setContactEmail(val.email);
+              if (val.youtube) setYoutubeUrl(val.youtube);
+              if (val.instagram) setInstaUrl(val.instagram);
+              if (val.facebook) setFacebookUrl(val.facebook);
+            }
+          });
         }
       } catch (e) {
-        console.error('Error loading Supabase media:', e);
+        console.error('Error loading Supabase data:', e);
       }
     }
-    loadProjects();
+    loadData();
   }, []);
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
@@ -258,7 +301,7 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[450px] md:w-[600px] h-[280px] sm:h-[450px] md:h-[600px] bg-gradient-to-tr from-cyan-900/20 via-purple-900/20 to-transparent rounded-full blur-[80px] md:blur-[120px] mix-blend-screen -z-10 pointer-events-none" />
           
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card text-[0.65rem] sm:text-xs uppercase tracking-[0.2em] text-cyan-300 font-bold mb-6 border border-cyan-500/30">
-            <Flame className="w-3.5 h-3.5 text-cyan-400" /> AI Video Agency & 3D Design
+            <Flame className="w-3.5 h-3.5 text-cyan-400" /> {heroBadge}
           </div>
 
           {/* Heading with responsive font sizes */}
@@ -267,19 +310,19 @@ export default function Home() {
               style={{ x: isDesktop ? xHeroLeft : 0 }}
               className="text-4xl sm:text-6xl md:text-7xl lg:text-[7.5vw] font-black leading-[0.95] tracking-tight md:tracking-tighter text-outline"
             >
-              ARTIFICIAL
+              {headline1}
             </motion.h1>
             
             <motion.h1 
               style={{ x: isDesktop ? xHeroRight : 0 }}
               className="text-4xl sm:text-6xl md:text-7xl lg:text-[7.5vw] font-black leading-[0.95] tracking-tight md:tracking-tighter text-white mt-1 sm:mt-2"
             >
-              INTELLIGENCE
+              {headline2}
             </motion.h1>
           </div>
 
           <p className="mt-6 md:mt-10 text-sm sm:text-base md:text-xl text-white/50 max-w-xl mx-auto font-light leading-relaxed px-2">
-            Architecting high-converting visual assets. Specialized in next-gen AI video editing, 3D product simulation, and viral storytelling.
+            {heroSubtitle}
           </p>
 
           <div className="mt-8 md:mt-12 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-4">
@@ -481,7 +524,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <a
-                href="https://www.youtube.com/@Cenonmate-z6j"
+                href={youtubeUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="px-6 py-3 rounded-full bg-red-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-red-500 transition-all flex items-center justify-center gap-2"
@@ -489,7 +532,7 @@ export default function Home() {
                 <Film className="w-4 h-4" /> YouTube @Cenonmate
               </a>
               <a
-                href="https://www.instagram.com/cenon_mate/"
+                href={instaUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2"
@@ -581,11 +624,7 @@ export default function Home() {
 
             {/* Service Cards */}
             <div className="md:w-2/3 space-y-6">
-              {[
-                { num: '01', title: 'AI Cinematic Editing', desc: 'Transforming raw footage into high-retention, cinematic masterpieces. Advanced audio design, pacing, and visual effects.' },
-                { num: '02', title: 'Hyper-Realistic 3D Products', desc: 'Photorealistic mockups and dynamic rotating simulations that skyrocket your brand perception.' },
-                { num: '03', title: 'Custom Generative Assets', desc: 'Bespoke AI-generated graphics, futuristic environments, and concept imagery tailored exclusively for your project.' },
-              ].map((item, index) => (
+              {services.map((item, index) => (
                 <div 
                   key={index}
                   className="glass-card p-6 sm:p-10 rounded-2xl md:rounded-3xl"
@@ -686,7 +725,7 @@ export default function Home() {
           {/* Social Links Pills */}
           <div className="flex flex-wrap justify-center gap-3">
             <a 
-              href="https://www.youtube.com/@Cenonmate-z6j" 
+              href={youtubeUrl} 
               target="_blank" 
               rel="noreferrer" 
               className="px-5 py-2.5 rounded-full glass-card hover:bg-white hover:text-black transition-all text-xs font-bold uppercase tracking-wider"
@@ -694,7 +733,7 @@ export default function Home() {
               YouTube
             </a>
             <a 
-              href="https://www.instagram.com/cenon_mate/" 
+              href={instaUrl} 
               target="_blank" 
               rel="noreferrer" 
               className="px-5 py-2.5 rounded-full glass-card hover:bg-white hover:text-black transition-all text-xs font-bold uppercase tracking-wider"
@@ -702,7 +741,7 @@ export default function Home() {
               Instagram
             </a>
             <a 
-              href="https://www.facebook.com/profile.php?id=61594673284423" 
+              href={facebookUrl} 
               target="_blank" 
               rel="noreferrer" 
               className="px-5 py-2.5 rounded-full glass-card hover:bg-white hover:text-black transition-all text-xs font-bold uppercase tracking-wider"

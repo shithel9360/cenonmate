@@ -89,7 +89,45 @@ export async function GET(request: Request) {
       END $$;
     `);
 
-    // 3. Insert initial featured video if empty
+    // 3. Create Site Settings Table (CMS & Password)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.site_settings (
+        key text PRIMARY KEY,
+        value jsonb NOT NULL,
+        updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+      );
+
+      ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'site_settings' AND policyname = 'Allow public read access on site_settings') THEN
+          CREATE POLICY "Allow public read access on site_settings" ON public.site_settings FOR SELECT USING (true);
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'site_settings' AND policyname = 'Allow public insert on site_settings') THEN
+          CREATE POLICY "Allow public insert on site_settings" ON public.site_settings FOR INSERT WITH CHECK (true);
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'site_settings' AND policyname = 'Allow public update on site_settings') THEN
+          CREATE POLICY "Allow public update on site_settings" ON public.site_settings FOR UPDATE USING (true);
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'site_settings' AND policyname = 'Allow public delete on site_settings') THEN
+          CREATE POLICY "Allow public delete on site_settings" ON public.site_settings FOR DELETE USING (true);
+        END IF;
+      END $$;
+
+      INSERT INTO public.site_settings (key, value)
+      VALUES
+        ('admin_password', '"Shithel02082005"'::jsonb),
+        ('hero_settings', '{"headline_1": "ARTIFICIAL", "headline_2": "INTELLIGENCE", "subtitle": "Architecting high-converting visual assets. Specialized in next-gen AI video editing, 3D product simulation, and viral storytelling.", "badge": "AI Video Agency & 3D Design"}'::jsonb),
+        ('social_settings', '{"email": "hello@cenonmate.com", "youtube": "https://www.youtube.com/@Cenonmate-z6j", "instagram": "https://www.instagram.com/cenon_mate/", "facebook": "https://www.facebook.com/profile.php?id=61594673284423"}'::jsonb),
+        ('services_settings', '[{"num": "01", "title": "AI Cinematic Editing", "desc": "Transforming raw footage into high-retention, cinematic masterpieces. Advanced audio design, pacing, and visual effects."}, {"num": "02", "title": "Hyper-Realistic 3D Products", "desc": "Photorealistic mockups and dynamic rotating simulations that skyrocket your brand perception."}, {"num": "03", "title": "Custom Generative Assets", "desc": "Bespoke AI-generated graphics, futuristic environments, and concept imagery tailored exclusively for your project."}]'::jsonb)
+      ON CONFLICT (key) DO UPDATE SET updated_at = now();
+    `);
+
+    // 4. Insert initial featured video if empty
     const checkVideos = await client.query('SELECT count(*) FROM public.videos');
     if (parseInt(checkVideos.rows[0].count) === 0) {
       await client.query(`
