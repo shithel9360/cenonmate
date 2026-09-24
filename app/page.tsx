@@ -20,10 +20,10 @@ interface MediaProject {
 const defaultMediaItems: MediaProject[] = [
   {
     id: 'default-yt-1',
-    title: '$7000 Portfolio Website With Free AI Tools',
-    video_url: 'https://www.youtube.com/watch?v=tf_yi6DtDOQ',
-    thumbnail_url: 'https://i.ytimg.com/vi/tf_yi6DtDOQ/hqdefault.jpg',
-    description: 'High-end AI portfolio creation and cinematic visual engineering breakdown.',
+    title: 'Cenonmate Official Services & Visual Reel',
+    video_url: 'https://www.youtube.com/watch?v=5438rqudvek',
+    thumbnail_url: 'https://i.ytimg.com/vi/5438rqudvek/maxresdefault.jpg',
+    description: 'Official agency services breakdown: AI Video Editing, 3D Product Design, and Cinematic Visuals.',
     media_type: 'video',
     is_featured: true,
   },
@@ -275,7 +275,7 @@ export default function Home() {
           className="relative w-[95vw] h-[80vh] md:h-[90vh] bg-[#0a0a0a] rounded-[2rem] overflow-hidden group border border-white/5"
         >
           <div 
-            style={{ backgroundImage: `url(${featuredVideo?.thumbnail_url || 'https://i.ytimg.com/vi/tf_yi6DtDOQ/hqdefault.jpg'})` }}
+            style={{ backgroundImage: `url(${featuredVideo?.thumbnail_url || 'https://i.ytimg.com/vi/5438rqudvek/maxresdefault.jpg'})` }}
             className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity group-hover:scale-105 transition-transform duration-[2s] ease-out" 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />

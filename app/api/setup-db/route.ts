@@ -95,7 +95,7 @@ export async function GET(request: Request) {
       await client.query(`
         INSERT INTO public.videos (title, video_url, thumbnail_url, description, media_type, is_featured)
         VALUES 
-        ('$7000 Portfolio Website With Free AI Tools', 'https://www.youtube.com/watch?v=tf_yi6DtDOQ', 'https://i.ytimg.com/vi/tf_yi6DtDOQ/hqdefault.jpg', 'High-end AI portfolio creation and cinematic visual engineering breakdown.', 'video', true),
+        ('Cenonmate Official Services & Visual Reel', 'https://www.youtube.com/watch?v=5438rqudvek', 'https://i.ytimg.com/vi/5438rqudvek/maxresdefault.jpg', 'Official agency services breakdown: AI Video Editing, 3D Product Design, and Cinematic Visuals.', 'video', true),
         ('Cenonmate 2026 AI Video Showreel', 'https://www.youtube.com/@Cenonmate-z6j', 'https://images.unsplash.com/photo-1536240478700-b869070f9279?q=80&w=1600&auto=format&fit=crop', 'Commercial grade AI video editing, pacing, and sound design for global brands.', 'video', false),
         ('Speed Edit: AI Visual Hook in 5 Seconds', 'https://www.youtube.com/@Cenonmate-z6j', 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=1000&auto=format&fit=crop', 'How to retain 85% audience attention with pacing.', 'short', false),
         ('3D Hyper-Realistic Product Simulation', 'https://www.youtube.com/@Cenonmate-z6j', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop', 'From 2D concept to rotating 3D cinematic rendering.', 'short', false),
