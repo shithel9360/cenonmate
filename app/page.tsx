@@ -237,12 +237,13 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
       {isPlaying ? (
         <div className="relative w-full h-full bg-black overflow-hidden flex flex-col">
           {parsed.platform === 'instagram' ? (
-            <iframe
-              src={parsed.embedUrl}
-              title={item.title}
-              className="w-full h-full border-0 rounded-2xl"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+            <video
+              src={`/api/media-stream?code=${parsed.id}`}
+              controls
+              autoPlay
+              loop
+              playsInline
+              className="w-full h-full object-cover rounded-2xl bg-black"
             />
           ) : parsed.platform === 'youtube' || parsed.platform === 'youtube_short' ? (
             <iframe
@@ -841,12 +842,13 @@ export default function Home() {
                 {/* Video / Embed Player Frame */}
                 <div className="relative w-full h-full flex-1 bg-black overflow-hidden flex items-center justify-center">
                   {parsed.platform === 'instagram' ? (
-                    <iframe
-                      src={parsed.embedUrl}
-                      title={activeModalVideo.title}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
+                    <video
+                      src={`/api/media-stream?code=${parsed.id}`}
+                      controls
+                      autoPlay
+                      loop
+                      playsInline
+                      className="w-full h-full object-contain bg-black"
                     />
                   ) : parsed.platform === 'youtube' || parsed.platform === 'youtube_short' ? (
                     <iframe
