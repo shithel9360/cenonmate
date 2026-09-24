@@ -1,178 +1,252 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Play, Sparkles, Box, Wand2, Youtube, Instagram, Facebook, Mail } from 'lucide-react';
-import Image from 'next/image';
+import { useEffect, useState, useRef } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { ArrowUpRight, Play, Maximize2, MoveRight } from 'lucide-react';
 
-export default function Home() {
-  const services = [
-    {
-      title: 'AI Video Editing',
-      description: 'Transform raw footage into captivating stories using state-of-the-art AI technology. We edit, enhance, and bring your vision to life.',
-      icon: <Play className="w-8 h-8 text-cyan-400" />
-    },
-    {
-      title: 'AI Image Generation',
-      description: 'Stunning, high-quality images generated from text and concepts. Perfect for marketing, social media, and concept art.',
-      icon: <Sparkles className="w-8 h-8 text-purple-400" />
-    },
-    {
-      title: 'Product Design',
-      description: 'Modern and intuitive product designs. From 3D mockups to UI/UX, we create designs that convert and look breathtaking.',
-      icon: <Box className="w-8 h-8 text-cyan-400" />
-    },
-    {
-      title: 'Visual Impact',
-      description: 'Turning ideas into visual stories. We combine all our skills to produce end-to-end impact for your brand.',
-      icon: <Wand2 className="w-8 h-8 text-purple-400" />
-    }
-  ];
+// --- CUSTOM CURSOR ---
+function CustomCursor() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    const updateMousePosition = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+    };
+    
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === 'a' || target.tagName.toLowerCase() === 'button' || target.closest('a') || target.closest('button')) {
+        setIsHovered(true);
+      } else {
+        setIsHovered(false);
+      }
+    };
+
+    window.addEventListener('mousemove', updateMousePosition);
+    window.addEventListener('mouseover', handleMouseOver);
+    return () => {
+      window.removeEventListener('mousemove', updateMousePosition);
+      window.removeEventListener('mouseover', handleMouseOver);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500 selection:text-black">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="text-2xl font-bold tracking-tighter flex items-center gap-2">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              CENONMATE
-            </span>
-          </div>
-          <div className="hidden md:flex gap-8 text-sm font-medium text-gray-300">
-            <a href="#about" className="hover:text-white transition-colors">About</a>
-            <a href="#services" className="hover:text-white transition-colors">Services</a>
-            <a href="#work" className="hover:text-white transition-colors">Our Work</a>
-            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
-          </div>
-        </div>
-      </nav>
+    <motion.div
+      className="fixed top-0 left-0 w-3 h-3 bg-white rounded-full pointer-events-none z-[100] mix-blend-difference hidden md:block"
+      animate={{
+        x: mousePosition.x - 6,
+        y: mousePosition.y - 6,
+        scale: isHovered ? 5 : 1,
+        opacity: isHovered ? 0.4 : 1
+      }}
+      transition={{ type: "tween", ease: "backOut", duration: 0.1 }}
+    />
+  );
+}
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/20 rounded-full blur-[120px] -z-10" />
-        <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-purple-500/20 rounded-full blur-[100px] -z-10" />
-        
-        <div className="max-w-7xl mx-auto text-center space-y-8">
+// --- MAIN PAGE ---
+export default function Home() {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  // Parallax Values
+  const yHero1 = useTransform(scrollYProgress, [0, 0.2], ["0%", "50%"]);
+  const yHero2 = useTransform(scrollYProgress, [0, 0.2], ["0%", "-50%"]);
+  const scaleVideo = useTransform(scrollYProgress, [0.05, 0.2], [0.8, 1]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
+
+  return (
+    <div ref={containerRef} className="spotlight-wrapper min-h-[300vh] bg-black text-white selection:bg-white selection:text-black cursor-none">
+      
+      {/* --- CINEMATIC BACKGROUND --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Animated Abstract Image Background */}
+        <motion.div 
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=3000&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-luminosity"
+        />
+        {/* Dark Gradient Overlay for Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/80 to-black" />
+      </div>
+
+      <div className="bg-noise" />
+      <CustomCursor />
+      
+      {/* Floating Navbar */}
+      <motion.nav 
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-8 left-1/2 -translate-x-1/2 w-full max-w-[90vw] z-50 px-8 flex justify-between items-center mix-blend-difference"
+      >
+        <div className="text-xl font-medium tracking-tight">
+          CENONMATE
+        </div>
+        <div className="hidden md:flex gap-16 text-[0.65rem] uppercase tracking-[0.2em] font-bold text-white/50">
+          <a href="#work" className="hover:text-white transition-colors">Work</a>
+          <a href="#expertise" className="hover:text-white transition-colors">Expertise</a>
+          <a href="#contact" className="hover:text-white transition-colors">Contact</a>
+        </div>
+        <a href="#contact" className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.2em] font-bold border border-white/20 px-6 py-3 rounded-full hover:bg-white hover:text-black transition-all duration-500">
+          Available for Hire <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        </a>
+      </motion.nav>
+
+      {/* Hero Section (Kinetic Typography) */}
+      <section className="sticky top-0 h-screen flex flex-col justify-center items-center overflow-hidden z-10">
+        <motion.div style={{ opacity: opacityHero }} className="w-full relative flex flex-col items-center">
+          
+          <motion.div style={{ y: yHero2 }} className="absolute z-0 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-900/20 to-purple-900/20 rounded-full blur-[100px] mix-blend-screen" />
+          
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-8xl font-extrabold tracking-tight"
+            style={{ x: useTransform(scrollYProgress, [0, 0.2], ["0%", "-30%"]) }}
+            className="text-[12vw] font-medium leading-[0.8] tracking-tighter whitespace-nowrap z-10 text-outline mix-blend-difference cursor-default"
           >
-            IDEAS <span className="text-gray-600">→</span> VISUALS <span className="text-gray-600">→</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 glow-text">IMPACT</span>
+            ARTIFICIAL
           </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto"
-          >
-            AI x IMAGES x PRODUCTS x VIDEOS
-          </motion.p>
+          
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex justify-center gap-4 pt-8"
+            style={{ x: useTransform(scrollYProgress, [0, 0.2], ["0%", "30%"]) }}
+            className="flex items-center gap-8 z-10"
           >
-            <a href="#services" className="px-8 py-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors">
-              Explore Services
-            </a>
-            <a href="#contact" className="px-8 py-4 bg-transparent border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-colors">
-              Get in Touch
-            </a>
+            <div className="hidden md:block w-32 h-[2px] bg-white/20" />
+            <h1 className="text-[12vw] font-medium leading-[0.8] tracking-tighter whitespace-nowrap cursor-default">
+              INTELLIGENCE
+            </h1>
           </motion.div>
-        </div>
-      </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-24 px-6 bg-white/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold">Currently Available Services</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">Leveraging AI to bring you the best in visual content creation.</p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group cursor-pointer"
-              >
-                <div className="mb-4 p-3 bg-black/50 rounded-xl inline-block group-hover:scale-110 transition-transform">
-                  {service.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  {service.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-24 px-6 relative">
-        <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-purple-900/20 to-transparent -z-10" />
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="aspect-square rounded-3xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center overflow-hidden relative"
+          <motion.p 
+            style={{ y: yHero1 }}
+            className="mt-16 text-lg md:text-xl text-white/40 max-w-xl mx-auto font-light text-center z-10"
           >
-            {/* Placeholder for Profile Image */}
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full mb-6 blur-md opacity-50 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-              <h2 className="text-4xl font-bold relative z-10">Cenonmate</h2>
+            Architecting high-end digital experiences. <br/>Video Editing • 3D Design • Visual Strategy
+          </motion.p>
+
+        </motion.div>
+      </section>
+
+      {/* Expanding Showreel (Scroll linked) */}
+      <section id="work" className="relative z-20 w-full min-h-screen flex items-center justify-center bg-black">
+        <motion.div 
+          style={{ scale: scaleVideo }}
+          className="relative w-[95vw] h-[80vh] md:h-[90vh] bg-[#0a0a0a] rounded-[2rem] overflow-hidden group border border-white/5"
+        >
+          {/* Abstract Cinematic Poster */}
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-luminosity group-hover:scale-105 transition-transform duration-[2s] ease-out" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+          
+          {/* Custom Play Button */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full border-[1px] border-white/20 flex items-center justify-center backdrop-blur-xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-700 cursor-pointer">
+              <Play className="w-8 h-8 text-white fill-white group-hover:text-black group-hover:fill-black ml-1 transition-colors" />
             </div>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="space-y-6"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold">About Me</h2>
-            <p className="text-xl text-gray-300">
-              Hi, I'm <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 font-bold">Shoayibul Islam Shithel</span>.
-            </p>
-            <p className="text-gray-400 leading-relaxed">
-              I specialize in creating next-generation visual experiences through AI video editing and cutting-edge product design. My goal is to transform your concepts into breathtaking visuals that drive impact. Under the banner of CENONMATE, I offer professional, high-end services designed to elevate your brand.
-            </p>
-          </motion.div>
+          </div>
+
+          <div className="absolute bottom-12 left-12 right-12 flex flex-col md:flex-row justify-between md:items-end gap-6">
+            <div>
+              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-white/50 mb-3">Featured Showreel</p>
+              <h2 className="text-4xl md:text-6xl font-medium tracking-tight">Cenonmate 2026</h2>
+            </div>
+            <div className="flex gap-4">
+              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">Video</span>
+              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">AI</span>
+              <span className="glass-card px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold">3D</span>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Sticky Scroll Expertise Section */}
+      <section id="expertise" className="relative z-20 w-full bg-black py-48">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row gap-12 md:gap-32">
+            
+            {/* Sticky Sidebar */}
+            <div className="md:w-1/3">
+              <div className="sticky top-48">
+                <h2 className="text-[0.7rem] uppercase tracking-[0.3em] text-white/40 mb-6">Our Arsenal</h2>
+                <h3 className="text-4xl md:text-5xl font-light tracking-tight leading-tight">
+                  Crafting the impossible.
+                </h3>
+                <p className="mt-8 text-white/40 font-light leading-relaxed">
+                  We don&apos;t use templates. We build bespoke visual architectures using advanced AI frameworks and raw creativity.
+                </p>
+              </div>
+            </div>
+
+            {/* Scrollable Cards */}
+            <div className="md:w-2/3 space-y-8">
+              {[
+                { num: '01', title: 'AI Cinematic Editing', desc: 'Transforming raw footage into high-retention, cinematic masterpieces. We use AI to enhance color, pacing, and visual effects.' },
+                { num: '02', title: 'Hyper-Realistic 3D', desc: 'Product designs and visualizations that look indistinguishable from reality. Elevate your brand perception instantly.' },
+                { num: '03', title: 'Generative Assets', desc: 'Custom AI-generated graphics, environments, and concept art tailored exclusively for your project.' },
+              ].map((item, index) => (
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  className="glass-card p-12 md:p-16 rounded-[2rem] group"
+                >
+                  <div className="text-[0.8rem] uppercase tracking-[0.2em] text-white/30 mb-8 font-bold">{item.num}</div>
+                  <h4 className="text-3xl md:text-4xl font-medium tracking-tight mb-6">{item.title}</h4>
+                  <p className="text-lg text-white/40 font-light leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer id="contact" className="py-12 px-6 border-t border-white/10 bg-black">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-2xl font-bold tracking-tighter">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              CENONMATE
-            </span>
-          </div>
-          
-          <div className="flex gap-6">
-            <a href="https://www.youtube.com/@Cenonmate-z6j" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-red-500 transition-colors">
-              <Youtube className="w-6 h-6" />
-            </a>
-            <a href="https://www.instagram.com/cenon_mate/" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors">
-              <Instagram className="w-6 h-6" />
-            </a>
-            <a href="https://www.facebook.com/profile.php?id=61594673284423" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-blue-500 transition-colors">
-              <Facebook className="w-6 h-6" />
+      {/* Massive Typography Footer */}
+      <footer id="contact" className="relative z-20 w-full min-h-[80vh] bg-black flex flex-col justify-end overflow-hidden pb-12">
+        <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/10 to-transparent pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-6 w-full flex flex-col md:flex-row justify-between items-end gap-16 mb-24 relative z-10">
+          <div className="space-y-8 w-full md:w-auto">
+            <h2 className="text-4xl md:text-6xl font-light tracking-tighter">
+              Let&apos;s craft <br/><i className="text-white/50">greatness.</i>
+            </h2>
+            <a href="mailto:hello@cenonmate.com" className="inline-flex items-center gap-4 text-sm uppercase tracking-[0.2em] font-bold border-b border-white/20 pb-2 hover:border-white transition-all group">
+              hello@cenonmate.com <MoveRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
             </a>
           </div>
-          
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Cenonmate. All rights reserved.
-          </p>
+
+          {/* Unique Social Links */}
+          <div className="flex gap-4 w-full md:w-auto">
+            <a href="https://www.youtube.com/@Cenonmate-z6j" target="_blank" rel="noreferrer" className="glass-card w-24 h-24 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-500">
+              <span className="text-[0.6rem] uppercase tracking-widest font-bold">YouTube</span>
+            </a>
+            <a href="https://www.instagram.com/cenon_mate/" target="_blank" rel="noreferrer" className="glass-card w-24 h-24 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-500">
+              <span className="text-[0.6rem] uppercase tracking-widest font-bold">Insta</span>
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61594673284423" target="_blank" rel="noreferrer" className="glass-card w-24 h-24 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-500">
+              <span className="text-[0.6rem] uppercase tracking-widest font-bold">FB</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Giant Footer Marquee */}
+        <div className="w-full overflow-hidden whitespace-nowrap relative z-10 mix-blend-difference opacity-50">
+          <motion.div 
+            className="flex text-[15vw] font-black tracking-tighter leading-none"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+          >
+            <span className="pr-12">CENONMATE</span>
+            <span className="pr-12">CENONMATE</span>
+            <span className="pr-12">CENONMATE</span>
+            <span className="pr-12">CENONMATE</span>
+          </motion.div>
         </div>
       </footer>
     </div>
