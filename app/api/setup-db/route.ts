@@ -20,6 +20,8 @@ export async function GET(request: Request) {
     }, { status: 500 });
   }
 
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
   const client = new Client({
     connectionString,
     ssl: { rejectUnauthorized: false }
