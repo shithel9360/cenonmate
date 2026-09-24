@@ -153,8 +153,7 @@ interface MediaCardProps {
 
 function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Default sound ON when clicked!
   const [thumbSrc, setThumbSrc] = useState<string>('');
   const hoverTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -166,19 +165,33 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
       setThumbSrc(item.thumbnail_url);
     } else if (parsed.thumbnailUrl) {
       setThumbSrc(parsed.thumbnailUrl);
-    } else if (item.media_type === 'reel') {
-      setThumbSrc('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop');
+    } else if (parsed.hqThumbnailUrl) {
+      setThumbSrc(parsed.hqThumbnailUrl);
+    } else if (parsed.platform === 'instagram') {
+      // Auto-fetch real Instagram video cover from API
+      fetch(`/api/fetch-thumbnail?url=${encodeURIComponent(item.video_url)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.thumbnailUrl) {
+            setThumbSrc(data.thumbnailUrl);
+          } else {
+            setThumbSrc('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop');
+          }
+        })
+        .catch(() => {
+          setThumbSrc('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop');
+        });
     } else {
       setThumbSrc('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop');
     }
-  }, [item, parsed.thumbnailUrl]);
+  }, [item, parsed]);
 
   const handleMouseEnter = () => {
-    if (!autoPreviewEnabled || isLocked) return;
+    if (!autoPreviewEnabled) return;
     hoverTimer.current = setTimeout(() => {
       setIsPlaying(true);
       setIsMuted(true);
-    }, 400);
+    }, 450);
   };
 
   const handleMouseLeave = () => {
@@ -186,20 +199,19 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
       clearTimeout(hoverTimer.current);
       hoverTimer.current = null;
     }
-    if (!isLocked && isPlaying) {
+    if (autoPreviewEnabled && isPlaying && isMuted) {
       setIsPlaying(false);
     }
   };
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLocked(true);
     setIsPlaying(true);
+    setIsMuted(false); // PLAY FULL VIDEO WITH SOUND!
   };
 
   const handleStopClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLocked(false);
     setIsPlaying(false);
   };
 
@@ -210,9 +222,12 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
 
   return (
     <div
+      onClick={!isPlaying ? handlePlayClick : undefined}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={`group relative rounded-2xl md:rounded-3xl overflow-hidden glass-card border border-white/10 flex flex-col justify-between transition-all duration-300 ${
+        !isPlaying ? 'cursor-pointer' : ''
+      } ${
         isVertical 
           ? 'aspect-[9/16] w-full max-w-[340px] mx-auto' 
           : 'aspect-[16/9] col-span-1 sm:col-span-2 lg:col-span-2 w-full'
@@ -444,7 +459,7 @@ export default function Home() {
   const [mediaItems, setMediaItems] = useState<MediaProject[]>(defaultMediaItems);
   const [activeFilter, setActiveFilter] = useState<'all' | 'video' | 'short' | 'reel'>('all');
   const [activeModalVideo, setActiveModalVideo] = useState<MediaProject | null>(null);
-  const [autoPreviewEnabled, setAutoPreviewEnabled] = useState(true);
+  const [autoPreviewEnabled, setAutoPreviewEnabled] = useState(false);
 
   // Dynamic CMS States from Supabase
   const [heroBadge, setHeroBadge] = useState('AI Video Agency & 3D Design');

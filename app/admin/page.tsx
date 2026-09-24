@@ -76,9 +76,30 @@ export default function AdminPage() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [fetchingThumb, setFetchingThumb] = useState(false);
+
   // Security State
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Auto-fetch real video thumbnail/cover
+  const handleAutoFetchThumb = async (urlToFetch?: string) => {
+    const target = urlToFetch || videoUrl;
+    if (!target) return;
+    setFetchingThumb(true);
+    try {
+      const res = await fetch(`/api/fetch-thumbnail?url=${encodeURIComponent(target)}`);
+      const data = await res.json();
+      if (data.success && data.thumbnailUrl) {
+        setThumbnailUrl(data.thumbnailUrl);
+        setStatusMsg({ type: 'success', text: 'Real video cover image successfully detected!' });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setFetchingThumb(false);
+    }
+  };
 
   // Check sessionStorage on mount
   useEffect(() => {
@@ -188,11 +209,22 @@ export default function AdminPage() {
         await supabase.from('videos').update({ is_featured: false }).neq('id', '00000000-0000-0000-0000-000000000000');
       }
 
+      let finalThumb = thumbnailUrl;
+      if (!finalThumb && videoUrl) {
+        try {
+          const res = await fetch(`/api/fetch-thumbnail?url=${encodeURIComponent(videoUrl)}`);
+          const data = await res.json();
+          if (data.success && data.thumbnailUrl) {
+            finalThumb = data.thumbnailUrl;
+          }
+        } catch (e) {}
+      }
+
       const { error } = await supabase.from('videos').insert([
         {
           title,
           video_url: videoUrl,
-          thumbnail_url: thumbnailUrl || null,
+          thumbnail_url: finalThumb || null,
           description: description || null,
           media_type: mediaType,
           is_featured: isFeatured,
@@ -560,6 +592,9 @@ export default function AdminPage() {
                     required
                     placeholder="https://youtube.com/watch?v=... or https://instagram.com/reel/..."
                     value={videoUrl}
+                    onBlur={() => {
+                      if (videoUrl && !thumbnailUrl) handleAutoFetchThumb();
+                    }}
                     onChange={(e) => {
                       const val = e.target.value;
                       setVideoUrl(val);
@@ -573,16 +608,42 @@ export default function AdminPage() {
                     }}
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
                   />
-                  <p className="text-[0.65rem] text-gray-400 mt-1">
-                    ✨ Automatically detects YouTube videos, Shorts, and Instagram Reels to play directly on your website!
-                  </p>
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-[0.65rem] text-gray-400">
+                      ✨ Auto-detects YouTube, Shorts, and Instagram Reels
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleAutoFetchThumb()}
+                      disabled={fetchingThumb || !videoUrl}
+                      className="text-[0.65rem] font-bold text-cyan-400 hover:underline disabled:opacity-40"
+                    >
+                      {fetchingThumb ? 'Detecting Cover...' : 'Auto-Get Video Cover'}
+                    </button>
+                  </div>
                 </div>
+
+                {thumbnailUrl && (
+                  <div className="space-y-1">
+                    <span className="text-[0.65rem] text-gray-400 font-semibold block">Detected Video Cover Picture:</span>
+                    <div 
+                      className="relative rounded-xl overflow-hidden border border-white/20 h-32 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${thumbnailUrl})` }}
+                    >
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <span className="text-[0.65rem] font-bold uppercase tracking-wider bg-black/80 px-3 py-1 rounded-full text-green-400 border border-green-500/30">
+                          ✓ Real Video Picture Applied
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs text-gray-400 block mb-1 font-semibold">Custom Cover Thumbnail URL (Optional)</label>
                   <input
                     type="url"
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="Auto-filled or custom image link..."
                     value={thumbnailUrl}
                     onChange={(e) => setThumbnailUrl(e.target.value)}
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
