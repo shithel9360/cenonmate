@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface MediaProject {
   id: string;
@@ -280,6 +281,7 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
               {(parsed.platform === 'youtube' || parsed.platform === 'youtube_short' || parsed.platform === 'direct') && (
                 <button
                   onClick={handleToggleSound}
+                  aria-label={isMuted ? "Unmute video" : "Mute video"}
                   className={`p-2 rounded-full backdrop-blur-md border transition-all ${
                     isMuted 
                       ? 'bg-black/70 border-white/20 text-white/80 hover:text-white' 
@@ -293,6 +295,7 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
 
               <button
                 onClick={() => onOpenModal(item)}
+                aria-label="Maximize video"
                 className="p-2 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black transition-all"
                 title="Expand to Cinema Modal"
               >
@@ -301,6 +304,7 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
 
               <button
                 onClick={handleStopClick}
+                aria-label="Stop video"
                 className="p-2 rounded-full bg-red-600/90 hover:bg-red-600 text-white backdrop-blur-md border border-red-500/30 transition-all"
                 title="Stop and return to card"
               >
@@ -313,10 +317,15 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
         /* 2. POSTER / PREVIEW VIEW */
         <>
           {/* Background Poster Image */}
-          <div
-            style={{ backgroundImage: `url(${thumbSrc})` }}
-            className="absolute inset-0 bg-cover bg-center opacity-65 group-hover:opacity-85 transition-all duration-700 group-hover:scale-105"
-          />
+          <div className="absolute inset-0 opacity-65 group-hover:opacity-85 transition-all duration-700 group-hover:scale-105">
+            <Image
+              src={thumbSrc}
+              alt={item.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/20" />
 
           {/* Top Header Row */}
@@ -359,6 +368,7 @@ function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
           <div className="relative z-10 flex flex-col items-center justify-center my-auto">
             <button
               onClick={handlePlayClick}
+              aria-label="Play video"
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-300 shadow-2xl group/btn"
               title="Click to play right on this website"
             >
@@ -653,10 +663,16 @@ export default function Home() {
           style={{ scale: isDesktop ? scaleVideo : 1 }}
           className="relative w-full max-w-6xl aspect-[16/9] bg-[#0a0a0a] rounded-2xl md:rounded-3xl overflow-hidden group border border-white/10 shadow-2xl"
         >
-          <div 
-            style={{ backgroundImage: `url(${featuredVideo?.thumbnail_url || 'https://i.ytimg.com/vi/5438rqudvek/maxresdefault.jpg'})` }}
-            className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-75 transition-all duration-700" 
-          />
+          <div className="absolute inset-0 opacity-50 group-hover:opacity-75 transition-all duration-700">
+            <Image
+              src={featuredVideo?.thumbnail_url || 'https://i.ytimg.com/vi/5438rqudvek/maxresdefault.jpg'}
+              alt={featuredVideo?.title || "Featured Video"}
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
           
           {/* Centered Play Button */}
