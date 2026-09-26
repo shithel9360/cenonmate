@@ -64,8 +64,72 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://cenonmate.vercel.app/#organization',
+        name: 'Cenonmate',
+        url: 'https://cenonmate.vercel.app',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://cenonmate.vercel.app/favicon-512.png',
+        },
+        description: 'Next-Gen AI Video Editing & 3D Simulation Agency. We specialize in cinematic editing, hyper-realistic 3D product simulation, and custom generative assets.',
+        sameAs: [
+          'https://www.youtube.com/@Cenonmate-z6j',
+          'https://www.instagram.com/cenon_mate/',
+          'https://www.facebook.com/profile.php?id=61594673284423',
+        ],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'customer service',
+          availableLanguage: ['English', 'Bengali'],
+        },
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://cenonmate.vercel.app/#website',
+        url: 'https://cenonmate.vercel.app',
+        name: 'Cenonmate — AI Video Agency & 3D Design',
+        description: 'Next-Gen AI Video Editing & 3D Simulation Agency.',
+        publisher: {
+          '@id': 'https://cenonmate.vercel.app/#organization',
+        },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: 'https://cenonmate.vercel.app/?q={search_term_string}',
+          },
+          'query-input': 'required name=search_term_string',
+        },
+        inLanguage: 'en-US',
+      },
+      {
+        '@type': 'ProfessionalService',
+        '@id': 'https://cenonmate.vercel.app/#service',
+        name: 'Cenonmate AI Video Agency',
+        url: 'https://cenonmate.vercel.app',
+        description: 'Professional AI video editing, 3D product simulation, and cinematic content creation services.',
+        provider: {
+          '@id': 'https://cenonmate.vercel.app/#organization',
+        },
+        serviceType: ['AI Video Editing', '3D Product Design', 'Cinematic Editing', 'Video Production', 'Custom Generative Assets'],
+        areaServed: 'Worldwide',
+      },
+    ],
+  };
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );
