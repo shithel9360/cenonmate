@@ -152,10 +152,12 @@ interface MediaCardProps {
   autoPreviewEnabled: boolean;
 }
 
+const FALLBACK_THUMB = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop';
+
 function MediaCard({ item, onOpenModal, autoPreviewEnabled }: MediaCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false); // Default sound ON when clicked!
-  const [thumbSrc, setThumbSrc] = useState<string>('');
+  const [thumbSrc, setThumbSrc] = useState<string>(FALLBACK_THUMB);
   const hoverTimer = useRef<NodeJS.Timeout | null>(null);
 
   const parsed = parseMediaUrl(item.video_url);
