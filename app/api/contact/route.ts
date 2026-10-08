@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     // Insert server-side to avoid exposing Supabase anon key / allowing malicious inserts directly
     await queryDb(
-      `INSERT INTO public.inquiries (name, email, message) VALUES ($1, $2, $3)`,
+      `INSERT INTO public.inquiries (name, email, details) VALUES ($1, $2, $3)`,
       [name.trim(), email.trim(), message.trim()]
     );
 

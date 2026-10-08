@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import MediaCard, { MediaProject } from '@/components/ui/MediaCard';
@@ -9,17 +9,43 @@ import { parseMediaUrl } from '@/lib/utils/mediaParser';
 export default function MediaGallery({ items }: { items: MediaProject[] }) {
   const [filter, setFilter] = useState<'all' | 'video' | 'short' | 'reel'>('all');
   const [selectedVideo, setSelectedVideo] = useState<MediaProject | null>(null);
+  
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setSelectedVideo(null);
+
+      // Focus trap logic
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (!e.shiftKey && document.activeElement === lastElement) {
+          firstElement?.focus();
+          e.preventDefault();
+        } else if (e.shiftKey && document.activeElement === firstElement) {
+          lastElement?.focus();
+          e.preventDefault();
+        }
+      }
     };
+
     if (selectedVideo) {
+      previousFocus.current = document.activeElement as HTMLElement;
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.style.overflow = '';
+      if (previousFocus.current) {
+        previousFocus.current.focus();
+      }
     }
+
     return () => {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
@@ -87,6 +113,7 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
+            ref={modalRef}
           >
             <button
               onClick={() => setSelectedVideo(null)}
@@ -114,10 +141,11 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
                   return (
                     <iframe
                       src={`${parsed.embedUrl}&mute=0`}
-                      className="w-full h-full"
+                      className="w-full h-full focus:outline-none"
                       allow="autoplay; encrypted-media"
                       allowFullScreen
                       title={selectedVideo.title}
+                      tabIndex={0}
                     />
                   );
                 }
@@ -125,10 +153,11 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
                   return (
                     <iframe
                       src={parsed.embedUrl}
-                      className="w-full h-full bg-black"
+                      className="w-full h-full bg-black focus:outline-none"
                       allow="autoplay"
                       allowFullScreen
                       title={selectedVideo.title}
+                      tabIndex={0}
                     />
                   );
                 }
@@ -137,8 +166,9 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
                     src={parsed.embedUrl}
                     controls
                     autoPlay
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover focus:outline-none"
                     title={selectedVideo.title}
+                    tabIndex={0}
                   />
                 );
               })()}

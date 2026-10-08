@@ -79,8 +79,47 @@ export default function AdminPage() {
   const [fetchingThumb, setFetchingThumb] = useState(false);
 
   // Security State
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Change Password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword) {
+      setStatusMsg({ type: 'error', text: 'Current password is required.' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setStatusMsg({ type: 'error', text: 'New password must be at least 8 characters long.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setStatusMsg({ type: 'error', text: 'Passwords do not match!' });
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/admin/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to change password');
+
+      setStatusMsg({ type: 'success', text: 'Admin Password successfully changed!' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Auto-fetch real video thumbnail/cover
   const handleAutoFetchThumb = async (urlToFetch?: string) => {
@@ -350,38 +389,6 @@ export default function AdminPage() {
     }
   };
 
-  // Change Password
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 6) {
-      setStatusMsg({ type: 'error', text: 'Password must be at least 6 characters long.' });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setStatusMsg({ type: 'error', text: 'Passwords do not match!' });
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const res = await fetch('/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'admin_password', value: newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to change password');
-
-      setStatusMsg({ type: 'success', text: 'Admin Password successfully changed! Remember to use your new password next time.' });
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message });
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // Delete Inquiry
   const handleDeleteInquiry = async (id: string) => {
@@ -1004,11 +1011,23 @@ export default function AdminPage() {
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
+                <label className="text-xs text-gray-400 block mb-1 font-semibold">Current Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div>
                 <label className="text-xs text-gray-400 block mb-1 font-semibold">New Password</label>
                 <input
                   type="password"
                   required
-                  placeholder="Enter at least 6 characters"
+                  placeholder="Enter at least 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400"
