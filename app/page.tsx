@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
+import Hero3DScene from '@/components/Hero3DScene';
 
 interface MediaProject {
   id: string;
@@ -611,6 +612,7 @@ export default function Home() {
 
       {/* Hero Section (Fully Responsive for Mobile/Tablet/Desktop) */}
       <section className="relative min-h-[92dvh] md:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 pt-28 md:pt-32 pb-16 overflow-hidden z-10">
+        <Hero3DScene>
         <div className="w-full max-w-6xl mx-auto flex flex-col items-center relative">
           
           {/* Subtle Ambient Orb */}
@@ -657,6 +659,7 @@ export default function Home() {
           </div>
 
         </div>
+        </Hero3DScene>
       </section>
 
       {/* Main Featured Showreel (Fully Responsive) */}
