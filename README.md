@@ -206,7 +206,7 @@ All admin operations moved from client-side Supabase calls to server-side API ro
 | `/api/admin/videos` | GET/POST/PUT/DELETE | Full video CRUD |
 | `/api/admin/settings` | GET/PUT | Site settings management |
 | `/api/admin/inquiries` | GET/DELETE | Inquiry management |
-| `/api/setup-db` | POST | One-time DB setup (requires auth) |
+| `/` | POST | One-time DB setup (requires auth) |
 
 #### 5.4 — HTTP Security Headers (`next.config.mjs`)
 
@@ -228,7 +228,7 @@ X-Powered-By: (removed)
 - ❌ Removed "Hover Preview: ON/OFF" toggle from public-facing site
 - ❌ Removed personal name ("Shoayibul Islam Shithel") from footer and form messages
 - ❌ Removed visible "Admin Dashboard" link from the website footer
-- ❌ Locked `/api/setup-db` behind admin authentication
+- ❌ Locked `/` behind admin authentication
 
 ---
 
@@ -375,7 +375,7 @@ Browser (User)
      ▼
 Next.js App (Vercel Edge)
      │
-     ├── Public Routes (/) ─────────────────── Supabase RLS (SELECT only)
+     ├── Public Routes (/) ─────────────────── Direct DB Query (Whitelist RLS / Parameterized)
      │
      └── /admin ────────────────────────────── Login Required
               │
@@ -443,15 +443,11 @@ Next.js App (Vercel Edge)
 Set these in your Vercel dashboard under **Project Settings → Environment Variables**:
 
 ```env
-# Supabase (public client)
-NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-
 # Server-side database (direct PostgreSQL connection)
-POSTGRES_URL=postgresql://postgres:password@db.xxxx.supabase.co:5432/postgres
+POSTGRES_URL=postgresql://postgres.xxxxx...
 
 # Admin auth secret (used for HMAC token signing)
-SUPABASE_JWT_SECRET=your_jwt_secret
+ADMIN_SESSION_SECRET=your_secure_random_string_here
 ```
 
 ---
