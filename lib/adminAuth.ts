@@ -2,24 +2,49 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 
 const AUTH_COOKIE_NAME = 'cenonmate_admin_session';
-const SECRET_SEED = process.env.SUPABASE_JWT_SECRET || 'cenonmate-secure-admin-token-seed-2026-auth';
+
+export function getSecretSeed(): string {
+  const seed = process.env.ADMIN_SESSION_SECRET;
+  if (!seed) {
+    throw new Error('FATAL: ADMIN_SESSION_SECRET is missing. Server refusing to authenticate.');
+  }
+  return seed;
+}
 
 export function createAdminToken(): string {
   const payload = JSON.stringify({
     role: 'admin',
     iat: Date.now(),
-    exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days validity
+    exp: Date.now() + 1 * 24 * 60 * 60 * 1000, // 1 day validity (shortened session)
   });
   const b64 = Buffer.from(payload).toString('base64url');
-  const sig = crypto.createHmac('sha256', SECRET_SEED).update(b64).digest('base64url');
+  const sig = crypto.createHmac('sha256', getSecretSeed()).update(b64).digest('base64url');
   return `${b64}.${sig}`;
 }
 
 export function verifyAdminToken(token: string | null | undefined): boolean {
   if (!token || !token.includes('.')) return false;
   const [b64, sig] = token.split('.');
-  const expectedSig = crypto.createHmac('sha256', SECRET_SEED).update(b64).digest('base64url');
-  if (sig !== expectedSig) return false;
+  
+  let expectedSig;
+  try {
+     expectedSig = crypto.createHmac('sha256', getSecretSeed()).update(b64).digest('base64url');
+  } catch(e) {
+     return false; // secret missing or misconfigured
+  }
+  
+  // Timing safe comparison to prevent signature forgery attacks
+  let sigBuffer;
+  let expectedBuffer;
+  try {
+    sigBuffer = Buffer.from(sig, 'base64url');
+    expectedBuffer = Buffer.from(expectedSig, 'base64url');
+  } catch(e) {
+    return false;
+  }
+  
+  if (sigBuffer.length !== expectedBuffer.length) return false;
+  if (!crypto.timingSafeEqual(sigBuffer, expectedBuffer)) return false;
 
   try {
     const payload = JSON.parse(Buffer.from(b64, 'base64url').toString('utf8'));

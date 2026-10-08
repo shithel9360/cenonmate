@@ -1,19 +1,23 @@
 import { Pool } from 'pg';
 
-const connectionString =
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  'postgresql://postgres.fsbyjmsziobxbkdyoxhr:Shithel02082005@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres';
-
 let pool: Pool | null = null;
 
 export function getDbPool(): Pool {
   if (!pool) {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const connectionString = 
+      process.env.POSTGRES_URL_NON_POOLING ||
+      process.env.POSTGRES_URL ||
+      process.env.POSTGRES_PRISMA_URL;
+      
+    if (!connectionString) {
+      throw new Error('FATAL: Database connection string is not provided in environment variables.');
+    }
+
     pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.NODE_ENV === 'production' 
+           ? { rejectUnauthorized: true } 
+           : { rejectUnauthorized: false }, // Use true in prod for actual CA verification
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
