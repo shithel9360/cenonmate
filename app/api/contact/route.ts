@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
-import { checkRateLimit } from '@/lib/rateLimit';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ip = getClientIp(request);
     const allowed = await checkRateLimit(ip, 'contact', { windowMs: 60 * 60 * 1000, max: 5 }); // 5 per hour
     
     if (!allowed) {

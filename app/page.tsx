@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { queryDb } from '@/lib/db';
 import VisualEngine from '@/components/3d/VisualEngine';
 import MediaGallery from '@/components/sections/MediaGallery';
 import ContactForm from '@/components/ui/ContactForm';
@@ -9,17 +9,17 @@ export const revalidate = 60; // ISR cache every 60 seconds
 
 async function getSiteData() {
   const [videosRes, settingsRes] = await Promise.all([
-    supabase.from('videos').select('*').order('created_at', { ascending: false }),
-    supabase.from('site_settings').select('key, value')
+    queryDb('SELECT * FROM public.videos ORDER BY created_at DESC'),
+    queryDb('SELECT key, value FROM public.site_settings')
   ]);
 
   const settingsMap: Record<string, any> = {};
-  settingsRes.data?.forEach(s => {
+  settingsRes.rows.forEach((s: { key: string; value: any }) => {
     settingsMap[s.key] = s.value;
   });
 
   return {
-    videos: videosRes.data || [],
+    videos: videosRes.rows,
     settings: settingsMap
   };
 }

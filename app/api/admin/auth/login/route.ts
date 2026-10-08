@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { createAdminToken, ADMIN_COOKIE_NAME } from '@/lib/adminAuth';
-import { checkRateLimit } from '@/lib/rateLimit';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ip = getClientIp(request);
     const allowed = await checkRateLimit(ip, 'login', { windowMs: 15 * 60 * 1000, max: 6 });
     
     if (!allowed) {
@@ -37,7 +37,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Incorrect Password. Please try again.' }, { status: 401 });
     }
 
-    const token = createAdminToken();
+    // Get current session version
+    const versionRes = await queryDb('SELECT value FROM public.site_settings WHERE key = $1', ['admin_session_version']);
+    const sessionVersion = versionRes.rows.length > 0 ? Number(versionRes.rows[0].value) : 1;
+
+    const token = createAdminToken(sessionVersion);
     const isProd = process.env.NODE_ENV === 'production';
 
     const response = NextResponse.json({ success: true, message: 'Authenticated successfully' });

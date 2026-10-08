@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+
 import { 
   Play, Trash2, Plus, ArrowLeft, Mail, Video, CheckCircle, 
   AlertCircle, Lock, Film, Smartphone, Save, Key, Layout, 
@@ -110,10 +110,13 @@ export default function AdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to change password');
 
-      setStatusMsg({ type: 'success', text: 'Admin Password successfully changed!' });
+      setStatusMsg({ type: 'success', text: 'Admin Password successfully changed! Redirecting to login...' });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
     } finally {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { isAuthenticatedAdmin } from '@/lib/adminAuth';
-import { checkRateLimit } from '@/lib/rateLimit';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ip = getClientIp(request);
     const allowed = await checkRateLimit(ip, 'change-pwd', { windowMs: 15 * 60 * 1000, max: 10 });
     
     if (!allowed) {
@@ -44,17 +44,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Current password is incorrect.' }, { status: 403 });
     }
 
-    // Generate new hash
     const newHash = await bcrypt.hash(newPassword, 12);
     
+    // Update hash and increment session version atomically
     await queryDb(
-      `INSERT INTO public.site_settings (key, value, updated_at) 
-       VALUES ($1, $2::jsonb, now()) 
-       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-      ['admin_password_hash', JSON.stringify(newHash)]
+      `
+      WITH current_ver AS (
+        SELECT COALESCE((SELECT value::text::int FROM public.site_settings WHERE key = 'admin_session_version'), 1) as ver
+      ),
+      update_hash AS (
+        INSERT INTO public.site_settings (key, value, updated_at) 
+        VALUES ('admin_password_hash', $1::jsonb, now()) 
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+      )
+      INSERT INTO public.site_settings (key, value, updated_at)
+      SELECT 'admin_session_version', (ver + 1)::text::jsonb, now() FROM current_ver
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+      `,
+      [JSON.stringify(newHash)]
     );
 
-    return NextResponse.json({ success: true, message: 'Password updated successfully' });
+    const response = NextResponse.json({ success: true, message: 'Password updated. Please log in again.' });
+    
+    // Clear the current session cookie
+    response.cookies.delete('cenonmate_admin_session');
+    
+    return response;
   } catch (error: any) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
