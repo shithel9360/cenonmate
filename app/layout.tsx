@@ -97,14 +97,6 @@ export default function RootLayout({
         publisher: {
           '@id': 'https://cenonmate.vercel.app/#organization',
         },
-        potentialAction: {
-          '@type': 'SearchAction',
-          target: {
-            '@type': 'EntryPoint',
-            urlTemplate: 'https://cenonmate.vercel.app/?q={search_term_string}',
-          },
-          'query-input': 'required name=search_term_string',
-        },
         inLanguage: 'en-US',
       },
       {

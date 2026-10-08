@@ -1,30 +1,21 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { createAdminToken, ADMIN_COOKIE_NAME } from '@/lib/adminAuth';
+import { checkRateLimit } from '@/lib/rateLimit';
 import bcrypt from 'bcryptjs';
-
-// Simple rate limiter map in memory (resets on server restart or edge function spin down)
-const loginAttempts = new Map<string, { count: number, resetAt: number }>();
 
 export async function POST(request: Request) {
   try {
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    const now = Date.now();
-    const attempts = loginAttempts.get(ip);
+    const allowed = await checkRateLimit(ip, 'login', { windowMs: 15 * 60 * 1000, max: 6 });
     
-    if (attempts && attempts.resetAt > now) {
-       if (attempts.count > 5) {
-          return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
-       }
-    } else {
-       loginAttempts.set(ip, { count: 0, resetAt: now + 15 * 60 * 1000 }); // 15 min lock
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
     }
 
     const { password } = await request.json();
-    const currentAttempts = loginAttempts.get(ip)!;
 
     if (!password || typeof password !== 'string') {
-      currentAttempts.count += 1;
       return NextResponse.json({ error: 'Password required' }, { status: 400 });
     }
 
@@ -42,12 +33,9 @@ export async function POST(request: Request) {
     const isMatch = await bcrypt.compare(password, validHash);
 
     if (!isMatch) {
-      currentAttempts.count += 1;
       await new Promise((r) => setTimeout(r, 400)); // Delay for timing attack mitigation
       return NextResponse.json({ error: 'Incorrect Password. Please try again.' }, { status: 401 });
     }
-    
-    currentAttempts.count = 0; // reset on success
 
     const token = createAdminToken();
     const isProd = process.env.NODE_ENV === 'production';
@@ -65,7 +53,6 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Login error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

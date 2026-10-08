@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, CheckCircle2, Sparkles } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Send, CheckCircle2 } from 'lucide-react';
 
 export default function ContactForm() {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', message: '', _honeypot: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -17,21 +16,20 @@ export default function ContactForm() {
     setErrorMsg('');
 
     try {
-      const { error } = await supabase.from('inquiries').insert([
-        {
-          name: formData.name,
-          email: formData.email,
-          message: formData.message,
-        },
-      ]);
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
       
       setIsSuccess(true);
-      setFormData({ name: '', email: '', message: '' });
+      setFormData({ name: '', email: '', message: '', _honeypot: '' });
       setTimeout(() => setIsSuccess(false), 5000);
     } catch (err: any) {
-      setErrorMsg('Failed to send message. Please try again.');
+      setErrorMsg(err.message || 'Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -39,6 +37,15 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="relative z-10 w-full max-w-2xl mx-auto space-y-6">
+      <input
+        type="text"
+        name="_honeypot"
+        style={{ display: 'none' }}
+        tabIndex={-1}
+        autoComplete="off"
+        value={formData._honeypot}
+        onChange={(e) => setFormData({ ...formData, _honeypot: e.target.value })}
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">

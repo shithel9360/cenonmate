@@ -1,14 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles } from 'lucide-react';
+import { X } from 'lucide-react';
 import MediaCard, { MediaProject } from '@/components/ui/MediaCard';
 import { parseMediaUrl } from '@/lib/utils/mediaParser';
 
 export default function MediaGallery({ items }: { items: MediaProject[] }) {
   const [filter, setFilter] = useState<'all' | 'video' | 'short' | 'reel'>('all');
   const [selectedVideo, setSelectedVideo] = useState<MediaProject | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedVideo(null);
+    };
+    if (selectedVideo) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedVideo]);
 
   // Compute available filters to hide empty ones
   const availableTypes = Array.from(new Set(items.map(i => i.media_type)));
@@ -34,8 +50,9 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
             className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
               filter === f.id
                 ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white border border-white/5'
+                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white border border-white/5 focus:outline-none focus:ring-2 focus:ring-cyan-500/50'
             }`}
+            aria-pressed={filter === f.id}
           >
             {f.label}
           </button>
@@ -65,13 +82,17 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto"
             onClick={() => setSelectedVideo(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
           >
             <button
               onClick={() => setSelectedVideo(null)}
-              className="absolute top-8 right-8 p-3 rounded-full bg-white/10 text-white hover:bg-white hover:text-black transition-all z-50"
+              className="absolute top-8 right-8 p-3 rounded-full bg-white/10 text-white hover:bg-white hover:text-black transition-all z-50 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               aria-label="Close modal"
+              autoFocus
             >
               <X className="w-6 h-6" />
             </button>
@@ -81,11 +102,12 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
               exit={{ scale: 0.95, opacity: 0 }}
               className={`relative w-full max-w-5xl bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 ${
                 selectedVideo.media_type === 'short' || selectedVideo.media_type === 'reel'
-                  ? 'max-w-md aspect-[9/16]'
-                  : 'aspect-video'
+                  ? 'max-w-md aspect-[9/16] mx-auto my-auto'
+                  : 'aspect-video my-auto'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
+              <h2 id="modal-title" className="sr-only">{selectedVideo.title}</h2>
               {(() => {
                 const parsed = parseMediaUrl(selectedVideo.video_url);
                 if (parsed.platform === 'youtube') {
@@ -95,6 +117,7 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
                       className="w-full h-full"
                       allow="autoplay; encrypted-media"
                       allowFullScreen
+                      title={selectedVideo.title}
                     />
                   );
                 }
@@ -105,6 +128,7 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
                       className="w-full h-full bg-black"
                       allow="autoplay"
                       allowFullScreen
+                      title={selectedVideo.title}
                     />
                   );
                 }
@@ -114,6 +138,7 @@ export default function MediaGallery({ items }: { items: MediaProject[] }) {
                     controls
                     autoPlay
                     className="w-full h-full object-cover"
+                    title={selectedVideo.title}
                   />
                 );
               })()}

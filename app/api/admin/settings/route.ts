@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { isAuthenticatedAdmin } from '@/lib/adminAuth';
 
+const PROTECTED_KEYS = ['admin_password', 'admin_password_hash', 'admin_session_secret'];
+
 export async function GET() {
   const isAuth = await isAuthenticatedAdmin();
   if (!isAuth) {
@@ -9,10 +11,9 @@ export async function GET() {
   }
 
   try {
-    const res = await queryDb('SELECT key, value FROM public.site_settings');
+    const res = await queryDb('SELECT key, value FROM public.site_settings WHERE key != ALL($1::text[])', [PROTECTED_KEYS]);
     return NextResponse.json({ settings: res.rows });
   } catch (error: any) {
-    console.error('Error fetching settings:', error);
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
   }
 }
@@ -30,10 +31,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
 
-    if (key === 'admin_password') {
-      if (!value || typeof value !== 'string' || value.length < 6) {
-        return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
-      }
+    if (PROTECTED_KEYS.includes(key)) {
+      return NextResponse.json({ error: 'Cannot modify authentication settings via this endpoint.' }, { status: 403 });
     }
 
     const jsonValue = JSON.stringify(value);
@@ -46,7 +45,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error updating settings:', error);
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }
 }

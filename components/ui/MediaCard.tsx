@@ -6,7 +6,7 @@ import { Play, Volume2, VolumeX, Maximize2, X } from 'lucide-react';
 import Image from 'next/image';
 import { parseMediaUrl } from '@/lib/utils/mediaParser';
 
-const FALLBACK_THUMB = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop';
+const FALLBACK_THUMB = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23000000"/><stop offset="100%" stop-color="%23061c29"/></linearGradient></defs><rect width="100%" height="100%" fill="url(%23g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2300ffff" opacity="0.3" letter-spacing="4">MEDIA UNAVAILABLE</text></svg>';
 
 export interface MediaProject {
   id: string;
@@ -72,10 +72,17 @@ export default function MediaCard({ item, onOpenModal, autoPreviewEnabled }: Med
       transition={{ duration: 0.4 }}
       className={`group relative overflow-hidden rounded-2xl cursor-pointer ${
         isVertical ? 'aspect-[9/16]' : 'aspect-video col-span-1 md:col-span-2'
-      } border border-white/5 bg-white/5 hover:border-cyan-500/30 transition-all shadow-xl shadow-black/50`}
+      } border border-white/5 bg-white/5 hover:border-cyan-500/30 focus:outline-none focus:ring-4 focus:ring-cyan-500/50 transition-all shadow-xl shadow-black/50`}
+      tabIndex={0}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={() => onOpenModal(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenModal(item);
+        }
+      }}
     >
       <AnimatePresence>
         {isPlaying && parsed.embedUrl ? (
