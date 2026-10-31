@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { cookies } from 'next/headers';
-import { queryDb } from './db';
+import { cookies } from 'next/headers.js';
+import { queryDb } from './db.ts';
 
 const AUTH_COOKIE_NAME = 'cenonmate_admin_session';
 

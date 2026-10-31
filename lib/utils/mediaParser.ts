@@ -43,9 +43,10 @@ export function parseMediaUrl(url: string): ParsedMedia {
   }
 
   if (url.includes('instagram.com/reel/') || url.includes('instagram.com/p/')) {
+    const cleanBase = url.split('?')[0].replace(/\/+$/, '');
     return {
       platform: 'instagram',
-      embedUrl: url.split('?')[0] + 'embed/',
+      embedUrl: `${cleanBase}/embed/`,
     };
   }
 

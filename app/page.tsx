@@ -40,6 +40,13 @@ export default async function Home() {
     { num: "03", title: "Custom Generative Assets", desc: "Bespoke AI-generated graphics and futuristic environments." }
   ];
 
+  const socialSettings = settings.social_settings || {
+    email: 'hello@cenonmate.com',
+    youtube: 'https://www.youtube.com/@Cenonmate-z6j',
+    instagram: 'https://www.instagram.com/cenon_mate/',
+    facebook: 'https://www.facebook.com/profile.php?id=61594673284423'
+  };
+
   return (
     <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans overflow-x-hidden">
       
@@ -49,12 +56,20 @@ export default async function Home() {
           <div className="text-xl font-black tracking-tighter uppercase pointer-events-auto">
             CENON<span className="text-cyan-400">MATE</span>
           </div>
-          <Link 
-            href="#contact" 
-            className="pointer-events-auto group hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white border border-white/20 px-6 py-2.5 rounded-full hover:bg-white hover:text-black transition-all"
-          >
-            Start a Project <MoveRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <div className="flex items-center gap-3 pointer-events-auto">
+            <Link 
+              href="#showcase" 
+              className="text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white px-3 py-1.5 transition-colors hidden sm:inline-block"
+            >
+              Work
+            </Link>
+            <Link 
+              href="#contact" 
+              className="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white border border-white/20 px-5 py-2 md:px-6 md:py-2.5 rounded-full hover:bg-white hover:text-black transition-all"
+            >
+              Start a Project <MoveRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -176,9 +191,19 @@ export default async function Home() {
           <div className="text-2xl font-black tracking-tighter uppercase">
             CENON<span className="text-cyan-400">MATE</span>
           </div>
-          <div className="flex gap-6 text-[10px] font-bold uppercase tracking-widest text-white/50">
-            <a href="https://www.youtube.com/@Cenonmate-z6j" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">YouTube</a>
-            <a href="https://www.instagram.com/cenon_mate/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
+          <div className="flex flex-wrap justify-center gap-6 text-[10px] font-bold uppercase tracking-widest text-white/50">
+            {socialSettings.youtube && (
+              <a href={socialSettings.youtube} target="_blank" rel="noopener noreferrer" aria-label="Cenonmate on YouTube" className="hover:text-white transition-colors">YouTube</a>
+            )}
+            {socialSettings.instagram && (
+              <a href={socialSettings.instagram} target="_blank" rel="noopener noreferrer" aria-label="Cenonmate on Instagram" className="hover:text-white transition-colors">Instagram</a>
+            )}
+            {socialSettings.facebook && (
+              <a href={socialSettings.facebook} target="_blank" rel="noopener noreferrer" aria-label="Cenonmate on Facebook" className="hover:text-white transition-colors">Facebook</a>
+            )}
+            {socialSettings.email && (
+              <a href={`mailto:${socialSettings.email}`} aria-label="Email Cenonmate" className="hover:text-white transition-colors">Contact</a>
+            )}
           </div>
           <div className="text-white/30 text-[10px] uppercase tracking-widest">
             © {new Date().getFullYear()} Cenonmate. All Rights Reserved.

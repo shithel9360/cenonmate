@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   title: "Cenonmate — AI Video Agency & 3D Design",
   description: "Next-Gen AI Video Editing & 3D Simulation Agency. We specialize in cinematic editing, hyper-realistic 3D product simulation, and custom generative assets.",
   metadataBase: new URL('https://cenonmate.vercel.app'),
+  alternates: {
+    canonical: 'https://cenonmate.vercel.app',
+  },
+  verification: {
+    google: 'google64f3ab4c81877d0d',
+  },
   icons: {
     icon: [
       { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },

@@ -48,10 +48,11 @@ export default function ContactForm() {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">
+          <label htmlFor="contact-name" className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">
             Name
           </label>
           <input
+            id="contact-name"
             type="text"
             required
             value={formData.name}
@@ -61,10 +62,11 @@ export default function ContactForm() {
           />
         </div>
         <div className="space-y-2">
-          <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">
+          <label htmlFor="contact-email" className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">
             Email
           </label>
           <input
+            id="contact-email"
             type="email"
             required
             value={formData.email}
@@ -75,10 +77,11 @@ export default function ContactForm() {
         </div>
       </div>
       <div className="space-y-2">
-        <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">
+        <label htmlFor="contact-brief" className="text-[10px] font-bold tracking-widest text-white/50 uppercase ml-1">
           Project Brief
         </label>
         <textarea
+          id="contact-brief"
           required
           rows={5}
           value={formData.message}
@@ -88,9 +91,11 @@ export default function ContactForm() {
         />
       </div>
 
-      {errorMsg && (
-        <p className="text-red-400 text-sm font-medium">{errorMsg}</p>
-      )}
+      <div aria-live="polite">
+        {errorMsg && (
+          <p className="text-red-400 text-sm font-medium">{errorMsg}</p>
+        )}
+      </div>
 
       <button
         type="submit"
