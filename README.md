@@ -1,8 +1,23 @@
 # 🎬 Cenonmate — AI Video Agency & 3D Design
 
+[![Live Site](https://img.shields.io/badge/Live%20Platform-cenonmate.vercel.app-7c3aed?style=for-the-badge&logo=vercel&logoColor=white)](https://cenonmate.vercel.app)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14%20(App%20Router)-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06b6d4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+
 > **Live Website:** [https://cenonmate.vercel.app](https://cenonmate.vercel.app)  
 > **GitHub Repository:** [https://github.com/shithel9360/cenonmate](https://github.com/shithel9360/cenonmate)  
 > **Admin Panel:** [https://cenonmate.vercel.app/admin](https://cenonmate.vercel.app/admin)
+
+---
+
+## 📌 Executive Summary & LinkedIn Brief (For AI / Muse AI Context)
+
+- **The Problem:** Creative video agencies struggle to showcase high-bitrate portfolio reels and 3D motion work on generic web builders without suffering from embed lag, third-party branding, and slow page loads.
+- **The Solution:** A bespoke Next.js 14 web application featuring an interactive 3D tilt perspective scene, direct media streaming proxies, and a secure server-rendered administrative CMS with custom HMAC authentication.
+- **Key Engineering Breakthroughs:** Embedded Supabase Root CA certificate handling for strict zero-trust TLS database verification, custom thumbnail auto-fetch microservice, and zero-CLS Framer Motion animations.
+- **Measurable Impact:** Sub-second dynamic media previews, 100% strict TLS database transport encryption, and full search-engine visibility with automated Google Search Console indexing.
 
 ---
 
